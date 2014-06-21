@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
  */
 static inline void main_initNetwork() {
 	common_type_error_t err;
-	err = pluggable_fieldbus_manager_init(config_root_setting(&main_config));
+	err = pfm_init(config_root_setting(&main_config));
 	if (err != COMMON_TYPE_SUCCESS) {
 		main_bailOut(EXIT_ERR_NETWORK,
 				"Can't initialize the network stack (err-code: %d)", err);
@@ -187,7 +187,7 @@ static void main_printHelp(void) {
  */
 static void main_freeResources(void) {
 	common_type_error_t err;
-	err = pluggable_fieldbus_manager_free();
+	err = pfm_free();
 	if (err != COMMON_TYPE_SUCCESS) {
 		logging_adapter_error("Can't free the network stack. (error-code: %d)",
 				err);

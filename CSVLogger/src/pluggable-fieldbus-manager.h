@@ -21,7 +21,7 @@
  * @param configuration The root configuration used to obtain needed values
  * @return The status of the operation.
  */
-common_type_error_t pluggable_fieldbus_manager_init(
+common_type_error_t pfm_init(
 		config_setting_t* configuration);
 
 /**
@@ -32,7 +32,7 @@ common_type_error_t pluggable_fieldbus_manager_init(
  * @return The unique channel identifier or a negative number if the operation
  * failed
  */
-int pluggable_fieldbus_manager_addChannel(config_setting_t* channelConf);
+int pfm_addChannel(config_setting_t* channelConf);
 
 /**
  * @brief Synchronizes every channel
@@ -40,7 +40,7 @@ int pluggable_fieldbus_manager_addChannel(config_setting_t* channelConf);
  * tries to take a consistent snapshot of the system.
  * @return The status of the operation
  */
-common_type_error_t pluggable_fieldbus_manager_sync(void);
+common_type_error_t pfm_sync(void);
 
 /**
  * @brief Fetches the value from the given channel.
@@ -50,7 +50,7 @@ common_type_error_t pluggable_fieldbus_manager_sync(void);
  * @param id The unique channel identifier
  * @return The read value or an error code.
  */
-common_type_t pluggable_fieldbus_manager_fetchValue(int id);
+common_type_t pfm_fetchValue(int id);
 
 /**
  * @brief Frees used resources.
@@ -58,6 +58,6 @@ common_type_t pluggable_fieldbus_manager_fetchValue(int id);
  * be called again.
  * @return The status of the operation.
  */
-common_type_error_t pluggable_fieldbus_manager_free(void);
+common_type_error_t pfm_free(void);
 
 #endif /* PLUGGABLE_FIELDBUS_MANAGER_H_ */

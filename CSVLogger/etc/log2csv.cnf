@@ -1,0 +1,37 @@
+# ##############################################################################
+# log2csv main configuration file.
+#
+# The file has to contain the modules to load as well as every channel to fetch.
+# Each channel denotes a target variable logged within the CSV file. Each media 
+# access control module (MAC) is responsible for driving a certain kind of 
+# message interface.
+#
+# Author: Michael Spiegel, michael.h.spiegel@gmail.com 
+# ##############################################################################
+
+# The fieldbus mac layer modules to load. Each module directive contains the 
+# parameters needed. The mandatory name directive corresponds to the module's 
+# typee. 
+mac=(
+	{
+		name="../LoggingFieldbusModule/logging-fieldbus.so";
+		# The tty interface to use
+		interface="/dev/ttyUSB0";
+	}
+);
+
+# The channels to log
+# Each channel corresponds to a column within the CSV file. 
+channel=(
+	{
+		# The mandatory name of the driver module
+		driver="../LoggingFieldbusModule/logging-fieldbus-temperature.so";
+		# The mandatory title of the channel used to label the CSV column 
+		title="T1";
+		# The address of the device to rerad
+		address={
+			bus_id=0;
+			dev_id=0;
+		}
+	}
+);

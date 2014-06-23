@@ -64,20 +64,24 @@ static pfm_mac_t *pfm_macVector;
 /** @brief The number of loaded application modules */
 static unsigned int pfm_appVectorLength = 0;
 /** @brief The vector of loaded application modules */
-static pfm_app_t * pfm_appVector;
+static pfm_app_t * pfm_appVector = NULL;
 
 /** @brief The number of available channels */
 static unsigned int pfm_channelVectorLength = 0;
 /** @brief The vector containing every initialized channel */
-static pfm_channel_t *pfm_channelVector;
+static pfm_channel_t *pfm_channelVector = NULL;
 
 /* Function prototypes */
-static inline common_type_error_t pfm_installModule(config_setting_t *modConfig,
-		const unsigned int index);
+static inline common_type_error_t pfm_installMacModule(
+		config_setting_t *modConfig, const unsigned int index);
 static inline common_type_error_t pfm_freeMac(void);
-static pfm_app_t pfm_getAppModule(const char* driverName);
+static inline common_type_error_t pfm_freeAppModules(void);
+static pfm_app_t * pfm_getAppModule(const char* driverName);
 static pfm_app_t * pfm_loadAppModule(const char* name);
 static void pfm_appVectorRollback(void);
+static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
+		pfm_app_t *app);
+static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address);
 
 /**
  * @brief Extracts the module's names and loads them.
@@ -115,7 +119,7 @@ common_type_error_t pfm_init(config_setting_t* configuration) {
 
 	// Load the mac modules
 	for (i = 0; i < pfm_macVectorLength; i++) {
-		err = pfm_installModule(config_setting_get_elem(mac, i), i);
+		err = pfm_installMacModule(config_setting_get_elem(mac, i), i);
 		if (err != COMMON_TYPE_SUCCESS) {
 			return err;
 		}
@@ -133,8 +137,8 @@ common_type_error_t pfm_init(config_setting_t* configuration) {
  * @param index The index within the mac vector structure to populate.
  * @return The status of the operation
  */
-static inline common_type_error_t pfm_installModule(config_setting_t *modConfig,
-		const unsigned int index) {
+static inline common_type_error_t pfm_installMacModule(
+		config_setting_t *modConfig, const unsigned int index) {
 	const char* name = "";
 	char* errStr;
 	common_type_error_t err;
@@ -211,8 +215,7 @@ static inline common_type_error_t pfm_installModule(config_setting_t *modConfig,
  * @details Assumes that the channelConf reference isn't null.
  */
 int pfm_addChannel(config_setting_t* channelConf) {
-	int channelID = -1;
-	char* driver = "";
+	const char* driver = "";
 	config_setting_t *address;
 	pfm_app_t *appModule = NULL;
 
@@ -240,13 +243,44 @@ int pfm_addChannel(config_setting_t* channelConf) {
 	// obtain the device driver
 	appModule = pfm_getAppModule(driver);
 	if (appModule == NULL ) {
+		logging_adapter_debug("Try to load application module \"%s\"", driver);
 		appModule = pfm_loadAppModule(driver);
 	}
 	if (appModule == NULL ) {
 		return -1;
 	}
-	// TODO: add Channel
-	return channelID;
+
+	return pfm_newChannel(appModule, address);
+}
+
+/**
+ * @brief Adds a new channel to the list of known channels and returns it's id
+ * @details If the function is unable to obtain memory -1 is returned.
+ * @param app A valid reference to the previously loaded app module
+ * @param address The channel's address configuration
+ * @return The index of the newly created channel
+ */
+static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address) {
+	unsigned int index = pfm_channelVectorLength;
+	pfm_channel_t * oldVector = pfm_channelVector;
+
+	assert(app != NULL);
+	assert(address != NULL);
+
+	pfm_channelVector = realloc(pfm_channelVector,
+			(pfm_channelVectorLength + 1) * sizeof(pfm_channelVector[0]));
+	if (pfm_channelVector == NULL ) {
+		pfm_channelVector = oldVector;
+		logging_adapter_info("Can't obtain more memory");
+		return -1;
+	}
+
+	pfm_channelVectorLength++;
+
+	pfm_channelVector[index].address = address;
+	pfm_channelVector[index].app = app;
+
+	return index;
 }
 
 /**
@@ -260,6 +294,8 @@ int pfm_addChannel(config_setting_t* channelConf) {
 static pfm_app_t * pfm_loadAppModule(const char* name) {
 	pfm_app_t *oldVector = pfm_appVector;
 	pfm_app_t *ret;
+	fieldbus_application_init_t init;
+	common_type_error_t err;
 
 	assert(name != NULL);
 
@@ -271,9 +307,10 @@ static pfm_app_t * pfm_loadAppModule(const char* name) {
 		return NULL ;
 	}
 	pfm_appVectorLength++;
-	ret = pfm_appVector[pfm_appVectorLength - 1];
+	ret = &pfm_appVector[pfm_appVectorLength - 1];
 	memset(ret, 0, sizeof(ret[0]));
 
+	ret->name = name;
 	ret->handler = dlopen(name, RTLD_NOW);
 	if (ret->handler == NULL ) {
 		pfm_appVectorRollback();
@@ -282,7 +319,86 @@ static pfm_app_t * pfm_loadAppModule(const char* name) {
 		return NULL ;
 	}
 
-	// TODO: initialize Module
+	init = pfm_lookupAppInterfaceFunctions(ret);
+	if (init == NULL ) {
+		pfm_appVectorRollback();
+		return NULL ;
+	}
+
+	err = init();
+	if (err != COMMON_TYPE_SUCCESS) {
+		pfm_appVectorRollback();
+		logging_adapter_info("Can't initialize the \"%s\" module (err-no: %d)",
+				name, (int) err);
+		return NULL ;
+	}
+
+	return ret;
+}
+
+/**
+ * @brief Tries to lookup the interface functions
+ * @details Sets the functions within the given structure and returns the init
+ * function. If the function is unable to obtain one or more interface functions
+ * it will return NULL and log an appropriate error message. It assumes that the
+ * given app reference is valid and that the handler as well as the name
+ * contained is properly set. The function won't perform a rollback operation
+ * taking the invalid application layer from the appVector.
+ * @param app The reference to the app structure to manipulate
+ * @return The init function or null.
+ */
+static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
+		pfm_app_t *app) {
+	fieldbus_application_init_t ret = NULL;
+	char* errStr;
+
+	assert(app != NULL);
+	assert(app->handler != NULL);
+	assert(app->name != NULL);
+
+	(void) dlerror();
+	ret = (fieldbus_application_init_t) dlsym(app->handler,
+			FIELDBUS_APPLICATION_INIT_NAME);
+	errStr = dlerror();
+	if (errStr != NULL ) {
+		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
+				"application module \"%s\": %s", FIELDBUS_APPLICATION_INIT_NAME,
+				app->name, errStr);
+		return NULL ;
+	}
+
+	(void) dlerror();
+	app->fetchValue = (fieldbus_application_fetchValue_t) dlsym(app->handler,
+			FIELDBUS_APPLICATION_FETCH_VALUE_NAME);
+	errStr = dlerror();
+	if (errStr != NULL ) {
+		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
+				"application module \"%s\": %s", FIELDBUS_APPLICATION_FETCH_VALUE_NAME,
+				app->name, errStr);
+		return NULL ;
+	}
+
+	(void) dlerror();
+	app->free = (fieldbus_application_free_t) dlsym(app->handler,
+			FIELDBUS_APPLICATION_FREE_NAME);
+	errStr = dlerror();
+	if (errStr != NULL ) {
+		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
+				"application module \"%s\": %s", FIELDBUS_APPLICATION_FREE_NAME,
+				app->name, errStr);
+		return NULL ;
+	}
+
+	(void) dlerror();
+	app->sync = (fieldbus_application_sync_t) dlsym(app->handler,
+			FIELDBUS_APPLICATION_SYNC_NAME);
+	errStr = dlerror();
+	if (errStr != NULL ) {
+		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
+				"application module \"%s\": %s", FIELDBUS_APPLICATION_SYNC_NAME,
+				app->name, errStr);
+		return NULL ;
+	}
 
 	return ret;
 }
@@ -297,7 +413,10 @@ static pfm_app_t * pfm_loadAppModule(const char* name) {
 static pfm_app_t* pfm_getAppModule(const char* driverName) {
 	unsigned int i;
 	assert(driverName != NULL);
+	assert(pfm_appVector == NULL || pfm_appVectorLength > 0);
+
 	for (i = 0; i < pfm_appVectorLength; i++) {
+		assert(pfm_appVector[i].name != NULL);
 		if (strcmp(driverName, pfm_appVector[i].name) == 0) {
 			return &pfm_appVector[i];
 		}
@@ -334,12 +453,59 @@ common_type_t pfm_fetchValue(int id) {
 }
 
 common_type_error_t pfm_free() {
-	common_type_error_t err = COMMON_TYPE_SUCCESS;
+	common_type_error_t err = COMMON_TYPE_SUCCESS, tmpErr;
+
 	if (pfm_macVector != NULL ) {
-		err = pfm_freeMac();
+		err = pfm_freeAppModules();
 	}
-	//TODO: free appVector
+
+	free(pfm_channelVector);
+	pfm_channelVector = NULL;
+	pfm_channelVectorLength = 0;
+
+	if (pfm_macVector != NULL ) {
+		tmpErr = pfm_freeMac();
+		err = (tmpErr == COMMON_TYPE_SUCCESS ? err : tmpErr);
+	}
+
 	return err;
+}
+
+/**
+ * @brief Calls the module's free function and deallocates used memory
+ * @details The function won't stop immediately if an error occurs. Instead it
+ * tries to deallocate as many resources as possible to avoid memory leaks. If
+ * multiple errors occur the last error code will be returned.
+ * @return The status of the operation
+ */
+static inline common_type_error_t pfm_freeAppModules() {
+	unsigned int i;
+	int err = 0;
+	common_type_error_t tmpErr, lastErr = COMMON_TYPE_SUCCESS;
+
+	assert(pfm_appVector != NULL || pfm_appVectorLength == 0);
+
+	for (i = 0; i < pfm_appVectorLength; i++) {
+		if (pfm_appVector[i].free != NULL ) {
+			tmpErr = pfm_appVector[i].free();
+			lastErr = (tmpErr == COMMON_TYPE_SUCCESS ? lastErr : tmpErr);
+			err |= (tmpErr == COMMON_TYPE_SUCCESS ? 0 : 1);
+		}
+		if (pfm_appVector[i].handler != NULL ) {
+			err |= dlclose(pfm_appVector[i].handler);
+		}
+	}
+
+	free(pfm_appVector);
+	pfm_appVector = NULL;
+	pfm_appVectorLength = 0;
+
+	if (err != 0) {
+		logging_adapter_info("Can't successfully unload one or more modules.");
+		return (
+				lastErr == COMMON_TYPE_SUCCESS ? COMMON_TYPE_ERR_LOAD_MODULE : lastErr);
+	}
+	return COMMON_TYPE_SUCCESS;
 }
 
 /**
@@ -355,6 +521,8 @@ static inline common_type_error_t pfm_freeMac() {
 	unsigned int i;
 	int err;
 	common_type_error_t lastErr = COMMON_TYPE_SUCCESS, tmpErr;
+
+	assert(pfm_macVector != NULL || pfm_macVectorLength == 0);
 
 	err = 0;
 	for (i = 0; i < pfm_macVectorLength; i++) {
@@ -372,6 +540,7 @@ static inline common_type_error_t pfm_freeMac() {
 
 	free(pfm_macVector);
 	pfm_macVector = NULL;
+	pfm_macVectorLength = 0;
 
 	if (err != 0) {
 		logging_adapter_info("Can't successfully unload one or more modules.");

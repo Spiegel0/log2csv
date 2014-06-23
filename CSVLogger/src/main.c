@@ -7,7 +7,6 @@
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  */
 
-
 #include "pluggable-fieldbus-manager.h"
 #include <logging-adapter.h>
 #include <assert.h>
@@ -36,6 +35,27 @@
 #define EXIT_ERR_LOGGING (3)
 #define EXIT_ERR_NETWORK (4)
 
+/* Configuration directive names */
+#define MAIN_CONFIG_CHANNEL "channel"
+#define MAIN_CONFIG_TITLE "title"
+
+/** @brief Entry used to form the list of channels to query */
+typedef struct {
+	/** @brief The identifier given by the network stack */
+	int channelID;
+	/**
+	 * @brief The title describing the channel.
+	 * @details The reference points to a location inside the configuration
+	 * structure. No manual deallocation of the used memory is needed.
+	 */
+	const char* title;
+} main_channels_t;
+
+/** @brief The list of channels to query */
+static main_channels_t *main_channelVector;
+/** @brief The number of channels to query */
+static int main_channelVectorLength;
+
 /**
  * @brief The parsed program options
  */
@@ -62,6 +82,8 @@ static void main_printHelp(void);
 static void main_freeResources(void);
 static inline void main_initConfig(void);
 static inline void main_initNetwork(void);
+static inline void main_addChannel(unsigned int index,
+		config_setting_t *config);
 
 /**
  * @brief Main program entry
@@ -100,17 +122,78 @@ int main(int argc, char** argv) {
 /**
  * @brief Initialized global network related variables and loads the network
  * stack.
- * @details It asumes that the configuration was successfully loaded and that
+ * @details It assumes that the configuration was successfully loaded and that
  * the program options are parsed. It will bail out if an error occurs.
  */
 static inline void main_initNetwork() {
 	common_type_error_t err;
+	config_setting_t *channelConfig;
+	unsigned int i;
+
 	err = pfm_init(config_root_setting(&main_config));
 	if (err != COMMON_TYPE_SUCCESS) {
-		main_bailOut(EXIT_ERR_NETWORK,
-				"Can't initialize the network stack (err-code: %d)", err);
+		main_bailOut(EXIT_ERR_NETWORK, "Can't initialize the network stack "
+				"(err-code: %d)", err);
 	}
 
+	channelConfig = config_lookup(&main_config, MAIN_CONFIG_CHANNEL);
+	if (channelConfig == NULL ) {
+		main_bailOut(EXIT_ERR_CONFIG, "Can't find the list of channels \"%s\"",
+				MAIN_CONFIG_CHANNEL);
+	}
+	if (!config_setting_is_list(channelConfig)) {
+		main_bailOut(EXIT_ERR_CONFIG, "The \"%s\" directive isn't a list",
+				MAIN_CONFIG_CHANNEL);
+
+	}
+	main_channelVectorLength = config_setting_length(channelConfig);
+	assert(main_channelVectorLength >= 0);
+	main_channelVector = malloc(
+			main_channelVectorLength * sizeof(main_channelVector[0]));
+	if (main_channelVector == NULL ) {
+		main_bailOut(EXIT_FAILURE, "Not enough memory available");
+	}
+
+	for (i = 0; i < main_channelVectorLength; i++) {
+		main_addChannel(i, config_setting_get_elem(channelConfig, i));
+	}
+
+}
+
+/**
+ * @brief Adds the given channel and sets it within the list of configured
+ * channels
+ * @details The function will bail out if an error is detected.
+ * @param index the index of the channel within the channelVector
+ * @param config The configuration of the channel, not null
+ */
+static inline void main_addChannel(unsigned int index, config_setting_t *config) {
+	const char* title = NULL;
+
+	assert(config != NULL);
+	assert(index < main_channelVectorLength);
+
+	if (!config_setting_is_group(config)) {
+		main_bailOut(EXIT_ERR_CONFIG,
+				"The entry nr. %d of the \"%s\" configuration "
+						"directive isn't a group", index + 1, MAIN_CONFIG_CHANNEL);
+	}
+
+	if (!config_setting_lookup_string(config, MAIN_CONFIG_TITLE, &title)) {
+		main_bailOut(EXIT_ERR_CONFIG, "The entry nr. %d of the \"%s\" directive "
+				"doesn't contain a \"%s\" string directive", index + 1,
+				MAIN_CONFIG_CHANNEL, MAIN_CONFIG_TITLE);
+	}
+	assert(title != NULL);
+
+	main_channelVector[index].title = title;
+	main_channelVector[index].channelID = pfm_addChannel(config);
+
+	if(main_channelVector[index].channelID < 0){
+		main_bailOut(EXIT_ERR_NETWORK, "Can't register the channel within the "
+				"network stack.");
+	}
+	logging_adapter_debug("Channel \"%s\" successfully added", title);
 }
 
 /**
@@ -187,10 +270,13 @@ static void main_printHelp(void) {
  */
 static void main_freeResources(void) {
 	common_type_error_t err;
+
+	free(main_channelVector);
+
 	err = pfm_free();
 	if (err != COMMON_TYPE_SUCCESS) {
 		logging_adapter_error("Can't free the network stack. (error-code: %d)",
-				err);
+				(int) err);
 	}
 
 	config_destroy(&main_config);

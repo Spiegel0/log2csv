@@ -9,6 +9,16 @@
 # Author: Michael Spiegel, michael.h.spiegel@gmail.com 
 # ##############################################################################
 
+# The filename to append the data. The programm will create the file and append
+# a headline if the file doesn't exist.
+outFile="data.csv";
+
+# (optional) The format of the first CSV column holding the current time. It has
+# to be a string following the strftime conventions (see $man 3 strftime) 
+timeFormat="%d.%m.%Y %H:%M:%S";
+# The title of the first column storing the current time
+timeHeader="Time stamp";
+
 # The fieldbus mac layer modules to load. Each module directive contains the 
 # parameters needed. The mandatory name directive corresponds to the module's 
 # typee. 

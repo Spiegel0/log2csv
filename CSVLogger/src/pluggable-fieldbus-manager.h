@@ -37,7 +37,9 @@ int pfm_addChannel(config_setting_t* channelConf);
 /**
  * @brief Synchronizes every channel
  * @details The function has to be called before reading one or more values. It
- * tries to take a consistent snapshot of the system.
+ * tries to take a consistent snapshot of the system. If one or more module
+ * issues an error the function will abort the sync process and return the
+ * error.
  * @return The status of the operation
  */
 common_type_error_t pfm_sync(void);

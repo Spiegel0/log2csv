@@ -141,6 +141,14 @@ static inline common_type_error_t pfm_installMacModule(
 		config_setting_t *modConfig, const unsigned int index) {
 	const char* name = "";
 	char* errStr;
+	/* Used to fix the POSIX - C99 conflict */
+	union {
+		void* vPtr;
+		fieldbus_mac_init_t initPtr;
+		fieldbus_mac_sync_t syncPtr;
+		fieldbus_mac_free_t freePtr;
+	} ptrWorkaround;
+
 	common_type_error_t err;
 	fieldbus_mac_init_t init;
 
@@ -170,8 +178,8 @@ static inline common_type_error_t pfm_installMacModule(
 
 	// Load end execute init function
 	(void) dlerror();
-	init = (fieldbus_mac_init_t) dlsym(pfm_macVector[index].handler,
-			"fieldbus_mac_init");
+	ptrWorkaround.vPtr = dlsym(pfm_macVector[index].handler, "fieldbus_mac_init");
+	init = ptrWorkaround.initPtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't successfully load the \"%s\" "
@@ -186,8 +194,9 @@ static inline common_type_error_t pfm_installMacModule(
 
 	// Load free and sync
 	(void) dlerror();
-	pfm_macVector[index].sync = (fieldbus_mac_sync_t) dlsym(
-			pfm_macVector[index].handler, FIELDBUS_MAC_SYNC_NAME);
+	ptrWorkaround.vPtr = dlsym(pfm_macVector[index].handler,
+			FIELDBUS_MAC_SYNC_NAME);
+	pfm_macVector[index].sync = ptrWorkaround.syncPtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't successfully load the \"%s\" "
@@ -196,8 +205,9 @@ static inline common_type_error_t pfm_installMacModule(
 	}
 
 	(void) dlerror();
-	pfm_macVector[index].free = (fieldbus_mac_free_t) dlsym(
-			pfm_macVector[index].handler, FIELDBUS_MAC_FREE_NAME);
+	ptrWorkaround.vPtr = dlsym(pfm_macVector[index].handler,
+			FIELDBUS_MAC_FREE_NAME);
+	pfm_macVector[index].free = ptrWorkaround.freePtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't successfully load the \"%s\" "
@@ -351,14 +361,21 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 		pfm_app_t *app) {
 	fieldbus_application_init_t ret = NULL;
 	char* errStr;
+	union {
+		void* vPtr;
+		fieldbus_application_init_t initPtr;
+		fieldbus_application_sync_t syncPtr;
+		fieldbus_application_fetchValue_t fetchPtr;
+		fieldbus_application_free_t freePtr;
+	} ptrWorkaround;
 
 	assert(app != NULL);
 	assert(app->handler != NULL);
 	assert(app->name != NULL);
 
 	(void) dlerror();
-	ret = (fieldbus_application_init_t) dlsym(app->handler,
-			FIELDBUS_APPLICATION_INIT_NAME);
+	ptrWorkaround.vPtr = dlsym(app->handler, FIELDBUS_APPLICATION_INIT_NAME);
+	ret = ptrWorkaround.initPtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
@@ -368,8 +385,9 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 	}
 
 	(void) dlerror();
-	app->fetchValue = (fieldbus_application_fetchValue_t) dlsym(app->handler,
+	ptrWorkaround.vPtr = dlsym(app->handler,
 			FIELDBUS_APPLICATION_FETCH_VALUE_NAME);
+	app->fetchValue = ptrWorkaround.fetchPtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
@@ -379,8 +397,8 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 	}
 
 	(void) dlerror();
-	app->free = (fieldbus_application_free_t) dlsym(app->handler,
-			FIELDBUS_APPLICATION_FREE_NAME);
+	ptrWorkaround.vPtr = dlsym(app->handler, FIELDBUS_APPLICATION_FREE_NAME);
+	app->free = ptrWorkaround.freePtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
@@ -390,8 +408,8 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 	}
 
 	(void) dlerror();
-	app->sync = (fieldbus_application_sync_t) dlsym(app->handler,
-			FIELDBUS_APPLICATION_SYNC_NAME);
+	ptrWorkaround.vPtr = dlsym(app->handler, FIELDBUS_APPLICATION_SYNC_NAME);
+	app->sync = ptrWorkaround.syncPtr;
 	errStr = dlerror();
 	if (errStr != NULL ) {
 		logging_adapter_info("Can't load the \"%s\" function of one fieldbus "
@@ -442,14 +460,36 @@ static void pfm_appVectorRollback(void) {
 }
 
 common_type_error_t pfm_sync() {
-	return COMMON_TYPE_ERR;
+	unsigned int i;
+	common_type_error_t err;
+
+	// Sync MAC layer
+	for(i=0;i<pfm_macVectorLength;i++){
+		err = pfm_macVector[i].sync();
+		if(err != COMMON_TYPE_SUCCESS){
+			logging_adapter_info("The MAC module nr. %d can't be synchronized "
+					"correctly.", i + 1);
+			return err;
+		}
+	}
+
+	// Sync App layer
+	for(i=0; i<pfm_appVectorLength; i++){
+		err = pfm_appVector[i].sync();
+		if(err != COMMON_TYPE_SUCCESS){
+			logging_adapter_info("The Application module nr. %d can't be "
+					"synchronized correctly.", i + 1);
+			return err;
+		}
+	}
+
+	return COMMON_TYPE_SUCCESS;
 }
 
 common_type_t pfm_fetchValue(int id) {
-	common_type_t ret;
-	ret.data.errVal = COMMON_TYPE_ERR;
-	ret.type = COMMON_TYPE_ERROR;
-	return ret;
+	assert(id >= 0);
+	assert(id < pfm_channelVectorLength);
+	return pfm_channelVector[id].app->fetchValue(pfm_channelVector[id].address);
 }
 
 common_type_error_t pfm_free() {

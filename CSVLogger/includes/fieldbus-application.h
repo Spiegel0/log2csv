@@ -57,11 +57,11 @@ typedef common_type_error_t (*fieldbus_application_sync_t)(void);
  * @param address The configuration snippet specifying the address
  * @return The value read or an appropriate error.
  */
-common_type_t fieldbus_application_fetchValue(config_setting_t address);
+common_type_t fieldbus_application_fetchValue(config_setting_t *address);
 
 /** @brief The pointer type of the fieldbus_application_fetchValue function */
 typedef common_type_t (*fieldbus_application_fetchValue_t)(
-		config_setting_t address);
+		config_setting_t *address);
 
 /** @brief The name of the fieldbus_application_fetchValue function */
 #define FIELDBUS_APPLICATION_FETCH_VALUE_NAME "fieldbus_application_fetchValue"

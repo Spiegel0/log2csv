@@ -17,6 +17,8 @@
 #include <string.h>
 #include <libconfig.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <time.h>
 
 #ifndef DEF_CONFIG
 /** @brief The name of the default configuration file location */
@@ -34,10 +36,25 @@
 #define EXIT_ERR_CONFIG (2)
 #define EXIT_ERR_LOGGING (3)
 #define EXIT_ERR_NETWORK (4)
+#define EXIT_ERR_OUTFILE (5)
+#define EXIT_ERR_LOCAL_SYS (6)
 
 /* Configuration directive names */
 #define MAIN_CONFIG_CHANNEL "channel"
 #define MAIN_CONFIG_TITLE "title"
+#define MAIN_CONFIG_OUT_FILE "outFile"
+#define MAIN_CONFIG_TIME_FORMAT "timeFormat"
+#define MAIN_CONFIG_TIME_HEADER "timeHeader"
+
+/** @brief The column separator used within the CSV file */
+#define MAIN_CSV_SEP ";"
+/** @brief The newline sequence used within the CSV file */
+#define MAIN_CSV_NEWLINE "\n"
+/** @brief The error sequence used if a value can't be obtained */
+#define MAIN_CSV_ERR "NaN"
+
+/** @brief The size of the buffer used to store time stamps */
+#define MAIN_TIMESTAMP_BUFFER_SIZE 40
 
 /** @brief Entry used to form the list of channels to query */
 typedef struct {
@@ -75,6 +92,9 @@ struct {
 /** @brief The global configuration */
 config_t main_config;
 
+/** @brief The file handler of the stream writing the CSV file */
+FILE* main_csvOut = NULL;
+
 /* Function prototypes */
 static void main_bailOut(const int err, const char* formatString, ...);
 static void main_parseProgOpts(int argc, char** argv);
@@ -82,8 +102,13 @@ static void main_printHelp(void);
 static void main_freeResources(void);
 static inline void main_initConfig(void);
 static inline void main_initNetwork(void);
-static inline void main_addChannel(unsigned int index,
-		config_setting_t *config);
+static inline void main_initOutputFile(void);
+static inline void main_addChannel(unsigned int index, config_setting_t *config);
+static void main_writeCSVHeader(void);
+static void main_processSamples(void);
+static void main_appendString(FILE* file, const char* str);
+static void main_appendResult(FILE *file, const common_type_t *result);
+static void main_appendTimestamp(FILE *file, struct timeval *tv);
 
 /**
  * @brief Main program entry
@@ -113,10 +138,92 @@ int main(int argc, char** argv) {
 	}
 	main_initConfig();
 	main_initNetwork();
+	main_initOutputFile();
+
+	main_processSamples();
 
 	logging_adapter_info("Successfully finished");
 	main_freeResources();
 	return EXIT_SUCCESS;
+}
+
+/**
+ * @brief Opens the output file and eventually writes the first line
+ * @details The function assumes that the configuration was previously
+ * initialized and that the channelVector is fully populated. It will bail out
+ * if an error occurs.
+ */
+static inline void main_initOutputFile() {
+	const char* filename;
+	int writeHeader;
+
+	if (!config_lookup_string(&main_config, MAIN_CONFIG_OUT_FILE, &filename)) {
+		main_bailOut(EXIT_ERR_CONFIG, "Can't fine the \"%s\" string configuration "
+				"directive.", MAIN_CONFIG_OUT_FILE);
+	}
+
+	writeHeader = access(filename, F_OK);
+	errno = 0;
+
+	main_csvOut = fopen(filename, "a");
+	if (main_csvOut == NULL ) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't open the file \"%s\" to append data",
+				filename);
+	}
+
+	if (writeHeader) {
+		logging_adapter_debug("File \"%s\" doens't exist. Try to create it and "
+				"write a headline", filename);
+		main_writeCSVHeader();
+	}
+
+}
+
+/**
+ * @brief Writes the CSVHeader to the previously opened csvOut file.
+ * @details <p>It assumes that the csvOut file as well as the configuration is
+ * initialized and that the channelVector is fully populated. The function will
+ * bail out if an error occurred.</p>
+ * <p>The first column will be the time stamp header. The field is taken from
+ * the configuration. If no configuration setting is present a default value
+ * will be used.</p>
+ */
+static void main_writeCSVHeader() {
+	unsigned int i;
+	size_t len;
+	const char* timeHeader = "Current Time/Date";
+
+	assert(main_csvOut != NULL);
+
+	(void) config_lookup_string(&main_config, MAIN_CONFIG_TIME_HEADER,
+			&timeHeader);
+
+	main_appendString(main_csvOut, timeHeader);
+	len = strlen(MAIN_CSV_SEP);
+	if (fwrite(MAIN_CSV_SEP, sizeof(char), len, main_csvOut) != len) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
+				"CSV-file", len);
+	}
+
+	for (i = 0; i < main_channelVectorLength; i++) {
+
+		main_appendString(main_csvOut, main_channelVector[i].title);
+
+		if (i + 1 != main_channelVectorLength) {
+			len = strlen(MAIN_CSV_SEP);
+			if (fwrite(MAIN_CSV_SEP, sizeof(char), len, main_csvOut) != len) {
+				main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
+						"CSV-file", len);
+			}
+		}
+	}
+
+	len = strlen(MAIN_CSV_NEWLINE);
+	if (fwrite(MAIN_CSV_NEWLINE, sizeof(char), len, main_csvOut) != len) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
+				"CSV-file", len);
+	}
+
 }
 
 /**
@@ -189,7 +296,7 @@ static inline void main_addChannel(unsigned int index, config_setting_t *config)
 	main_channelVector[index].title = title;
 	main_channelVector[index].channelID = pfm_addChannel(config);
 
-	if(main_channelVector[index].channelID < 0){
+	if (main_channelVector[index].channelID < 0) {
 		main_bailOut(EXIT_ERR_NETWORK, "Can't register the channel within the "
 				"network stack.");
 	}
@@ -209,6 +316,169 @@ static inline void main_initConfig(void) {
 				"(line: %d): %s", main_progOpt.configName,
 				config_error_line(&main_config), config_error_text(&main_config));
 	}
+}
+
+/**
+ * @brief Fetches the values from the configured channels and writes them to the
+ * previously opened CSV file.
+ * @details The network stack needs to be initialized but the function will call
+ * the sync function on it's own. If something went wrong during printing or
+ * synchronizing the function will bail out. If a value can't be fetched
+ * correctly a place holder value will be inserted into the CSV file.
+ */
+static void main_processSamples() {
+	struct timeval currentTime;
+	unsigned int i;
+	common_type_t result;
+	common_type_error_t err;
+
+	assert(main_csvOut != NULL);
+
+	err = pfm_sync();
+	if (err != COMMON_TYPE_SUCCESS) {
+		main_bailOut(EXIT_ERR_NETWORK, "Can't synchronize the network clients");
+	}
+
+	if (gettimeofday(&currentTime, NULL ) != 0) {
+		main_bailOut(EXIT_ERR_LOCAL_SYS, "Can't read the local system time");
+	}
+
+	main_appendTimestamp(main_csvOut, &currentTime);
+	if (fprintf(main_csvOut, "%s", MAIN_CSV_SEP) < 0) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
+	}
+
+	for (i = 0; i < main_channelVectorLength; i++) {
+		result = pfm_fetchValue(main_channelVector[i].channelID);
+		if (result.type == COMMON_TYPE_ERROR) {
+			logging_adapter_error("Can't fetch the value of \"%s\" (err-no. %d)",
+					main_channelVector[i].title, (int) result.data.errVal);
+		}
+		main_appendResult(main_csvOut, &result);
+
+		if (i + 1 < main_channelVectorLength) {
+			if (fprintf(main_csvOut, "%s", MAIN_CSV_SEP) < 0) {
+				main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
+			}
+		}
+	}
+
+	if (fprintf(main_csvOut, "%s", MAIN_CSV_NEWLINE) < 0) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
+	}
+
+}
+
+/**
+ * @brief Formats the given timestamp and appends it to the file
+ * @details <p>It assumes that both references are valid. If an error occurs
+ * during writing the data the function will bail out. The function also assumes
+ * that the configuration was previously initialized.</p>
+ * <p>The given timeval structure is converted to a local time and printed
+ * afterwards. The format is taken from the corresponding configuration
+ * directive.</p>
+ * @param file The file reference to write
+ * @param tv The time stamp to print
+ *
+ */
+static void main_appendTimestamp(FILE *file, struct timeval *tv) {
+	char strBuffer[MAIN_TIMESTAMP_BUFFER_SIZE];
+	const char* format = "%Y-%m-%d %H:%M:%S";
+	struct tm brokentime;
+	assert(file != NULL);
+	assert(tv != NULL);
+
+	(void) config_lookup_string(&main_config, MAIN_CONFIG_TIME_FORMAT, &format);
+
+	if (localtime_r(&tv->tv_sec, &brokentime) != &brokentime) {
+		main_bailOut(EXIT_ERR_LOCAL_SYS, "Can't convert to local time");
+	}
+
+	if (strftime(strBuffer, MAIN_TIMESTAMP_BUFFER_SIZE, format, &brokentime)
+			== 0) {
+		main_bailOut(EXIT_ERR_LOCAL_SYS, "Can't successfully create the time "
+				"string \"%s\"", format);
+	}
+
+	if (fwrite(strBuffer, 1, strlen(strBuffer), file) != strlen(strBuffer)) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
+	}
+}
+
+/**
+ * @brief Appends the value to the given file
+ * @details It assumes that the given references are valid. No column
+ * separation character will be printed. If the data can't be successfully
+ * written to the file the function will bail out.
+ * @param file
+ * @param result
+ */
+static void main_appendResult(FILE *file, const common_type_t *result) {
+	int err = 0;
+	assert(file != NULL);
+	assert(result != NULL);
+
+	switch (result->type) {
+	case COMMON_TYPE_DOUBLE:
+		err = fprintf(file, "%.15le", result->data.doubleVal);
+		break;
+	case COMMON_TYPE_LONG:
+		err = fprintf(file, "%lli", (long long int) result->data.longVal);
+		break;
+	case COMMON_TYPE_STRING:
+		main_appendString(file, result->data.strVal);
+		break;
+	case COMMON_TYPE_ERROR:
+		err = fprintf(file, MAIN_CSV_ERR);
+		break;
+	default:
+		assert(0);
+	}
+
+	if (err < 0) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
+	}
+}
+
+/**
+ * @brief Tries to append the given string to the CSV file
+ * @details <p>It is assumed that the given common type contains a valid string
+ * reference. The string is enclosed within double quotes and any double quote
+ * character will be escaped using two double quotes. No column separator is
+ * appended. The terminating '\0' character won't be written.</p>
+ * <p>If something went wrong the function will call main_bailOut</p>
+ * @param file A valid file reference to apend the CSV data
+ * @param str The string to append
+ */
+static void main_appendString(FILE *file, const char* str) {
+	const char quote = '"';
+
+	assert(file != NULL);
+	assert(str != NULL);
+
+	if (fwrite(&quote, sizeof(quote), 1, file) != sizeof(quote)) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
+	}
+
+	while (*str) {
+
+		if (*str == '"') {
+			if (fwrite(&quote, sizeof(quote), 1, file) != sizeof(quote)) {
+				main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
+			}
+		}
+
+		if (fwrite(str, sizeof(str[0]), 1, file) != sizeof(str[0])) {
+			main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
+		}
+
+		str++;
+	}
+
+	if (fwrite(&quote, sizeof(quote), 1, file) != sizeof(quote)) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
+	}
+
 }
 
 /**

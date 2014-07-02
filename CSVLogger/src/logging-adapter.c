@@ -23,7 +23,9 @@
 static char* logging_adapter_progname;
 
 int logging_adapter_init(const char* progname) {
+#ifdef SYSLOG_SUPPORT
 	openlog(progname, LOG_CONS, SYSLOG_FACILITY);
+#endif
 	logging_adapter_progname = malloc(strlen(progname) + 1);
 	if (logging_adapter_progname == NULL ) {
 		errno = ENOMEM;
@@ -37,14 +39,16 @@ int logging_adapter_init(const char* progname) {
 void logging_adapter_errorNo(int err, const char* formatString, va_list varArg) {
 
 	assert(formatString != NULL);
-
+#ifdef SYSLOG_SUPPORT
 	vsyslog(LOG_ERR, formatString, varArg);
-
+#endif
 	(void) fprintf(stderr, "ERROR [%s]: ", logging_adapter_progname);
 	(void) vfprintf(stderr, formatString, varArg);
 
 	if (err != 0) {
+#ifdef SYSLOG_SUPPORT
 		syslog(LOG_INFO, "%s", strerror(err));
+#endif
 		(void) fprintf(stderr, ": %s", strerror(err));
 	}
 	(void) fprintf(stderr, "\n");
@@ -64,9 +68,11 @@ void logging_adapter_info(const char* formatString, ...) {
 
 	assert(formatString != NULL);
 
+#ifdef SYSLOG_SUPPORT
 	va_start(varArg, formatString);
 	vsyslog(LOG_INFO, formatString, varArg);
 	va_end(varArg);
+#endif
 
 	(void) fprintf(stdout, "INFO [%s]: ", logging_adapter_progname);
 	va_start(varArg, formatString);
@@ -80,9 +86,11 @@ void logging_adapter_debug(const char* formatString, ...) {
 
 	assert(formatString != NULL);
 
+#ifdef SYSLOG_SUPPORT
 	va_start(varArg, formatString);
 	vsyslog(LOG_DEBUG, formatString, varArg);
 	va_end(varArg);
+#endif
 
 	(void) fprintf(stdout, "DEBUG [%s]: ", logging_adapter_progname);
 	va_start(varArg, formatString);
@@ -93,7 +101,10 @@ void logging_adapter_debug(const char* formatString, ...) {
 }
 
 void logging_adapter_freeResources(void) {
+#ifdef SYSLOG_SUPPORT
 	closelog();
-	if(logging_adapter_progname != NULL)
+#endif
+
+	if (logging_adapter_progname != NULL )
 		free(logging_adapter_progname);
 }

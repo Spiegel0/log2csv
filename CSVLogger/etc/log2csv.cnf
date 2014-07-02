@@ -26,7 +26,7 @@ mac=(
 	{
 		name="../LoggingFieldbusModule/logging-fieldbus.so";
 		# The tty interface to use
-		interface="/dev/ttyUSB0";
+		interface="/dev/ttyUSB1";
 	}
 );
 
@@ -40,16 +40,16 @@ channel=(
 		title="T1";
 		# The address of the device to rerad
 		address={
-			bus_id=0;
-			dev_id=0;
+			device_id=1;
+			channel_id=0;
 		};
 	},
 	{
 		type="../LoggingFieldbusModule/logging-fieldbus-temperature.so";
 		title="T2";
 		address={
-			bus_id=0;
-			dev_id=1;
+			device_id=1;
+			channel_id=1;
 		};
 	}
 );

@@ -8,13 +8,16 @@
 #
 
 # The compiler command is instructed by the official programming guidelines
-CC = gcc
+#CC = gcc
+CC=arm-linux-gnueabihf-gcc
+
 # The compiler flags are also instructed by the official programming guidelines
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -DENDEBUG 
 
 LDFLAGS += $(LIB:%=-l%)
+LDFLAGS += -Llib-arm
 #Used to access main module functions from outside
 LDFLAGS += -Wl,-export-dynamic
 

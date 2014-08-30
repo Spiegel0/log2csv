@@ -15,6 +15,7 @@ CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -fPIC 
 CFLAGS += -DENDEBUG 
+CFLAGS += -fpack-struct
 
 LDFLAGS += -shared
 LDFLAGS += $(LIB:%=-l%)
@@ -22,7 +23,7 @@ LDFLAGS += -L../CSVLogger/lib-arm
 
 # @brief The list of source files neccessary to build the MAC library. 
 # It has to be updated manually
-CFILES_MAC = dlogg-mac.c
+CFILES_MAC = dlogg-mac.c dlogg-current-data.c
 # @brief The list of source files neccessary to build the Temperature access
 # library. It has to be updated manually
 CFILES_STDVAL = dlogg-stdval.c

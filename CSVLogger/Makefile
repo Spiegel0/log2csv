@@ -15,6 +15,7 @@ CC=arm-linux-gnueabihf-gcc
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -DENDEBUG 
+CFLAGS += -fpack-struct
 
 LDFLAGS += $(LIB:%=-l%)
 LDFLAGS += -Llib-arm

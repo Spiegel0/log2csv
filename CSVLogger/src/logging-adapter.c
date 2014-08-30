@@ -74,7 +74,7 @@ void logging_adapter_info(const char* formatString, ...) {
 	va_end(varArg);
 #endif
 
-	(void) fprintf(stdout, "INFO [%s]: ", logging_adapter_progname);
+	(void) fprintf(stdout, "INFO  [%s]: ", logging_adapter_progname);
 	va_start(varArg, formatString);
 	(void) vfprintf(stdout, formatString, varArg);
 	(void) fprintf(stdout, "\n");

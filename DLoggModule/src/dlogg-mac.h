@@ -9,6 +9,7 @@
 
 #include <common-type.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /** @brief Defines a type storing a checksum fragment */
 typedef uint8_t dlogg_mac_chksum_t;

@@ -20,7 +20,7 @@
 #define DLOGG_MAC_CONFIG_INTERFACE "interface"
 
 /** @brief The timeout value in tenth of seconds */
-#define DLOGG_MAC_TIMEOUT (8)
+#define DLOGG_MAC_TIMEOUT (20)
 
 /** @brief The file handler used to access the tty */
 static int dlogg_mac_ttyFD = -1;
@@ -40,8 +40,6 @@ static struct {
 static inline common_type_error_t dlogg_mac_initTTY(const char* interface);
 static void dlogg_mac_updateChksum(uint8_t * buffer, size_t length,
 		dlogg_mac_chksum_t* chksum);
-static void dlogg_mac_debug_buffer(const char* name, uint8_t* buffer,
-		size_t length);
 
 common_type_error_t fieldbus_mac_init(config_setting_t* configuration) {
 	const char* interface;
@@ -132,37 +130,6 @@ static inline common_type_error_t dlogg_mac_initTTY(const char* interface) {
 	return COMMON_TYPE_SUCCESS;
 }
 
-common_type_error_t fieldbus_mac_sync() {
-	common_type_error_t err;
-	dlogg_mac_chksum_t chksum = 0;
-
-	uint8_t buffer[7] = {0x20, 0x10, 0x18, 0,0,0,0};
-	err = dlogg_mac_send(buffer, sizeof(buffer), &chksum);
-	if(err != COMMON_TYPE_SUCCESS)
-		return err;
-	err = dlogg_mac_send_chksum(&chksum);
-	if(err != COMMON_TYPE_SUCCESS)
-		return err;
-
-	chksum = 0;
-	err = dlogg_mac_read(buffer,2,&chksum);
-	if(err != COMMON_TYPE_SUCCESS)
-		return err;
-
-	dlogg_mac_debug_buffer("Ack Received", buffer, 2);
-	if(buffer[0] != 0x21 || buffer[1] != 0x43)
-		return COMMON_TYPE_ERR_INVALID_RESPONSE;
-
-	chksum = 0; // without ack
-	err = dlogg_mac_read(buffer, 2, &chksum);
-	if(err != COMMON_TYPE_SUCCESS)
-		return err;
-	dlogg_mac_debug_buffer("Module ID", buffer, 2);
-	err = dlogg_mac_read_chksum(&chksum);
-
-	return err;
-}
-
 common_type_error_t dlogg_mac_send(uint8_t *buffer, size_t length,
 		dlogg_mac_chksum_t * chksum) {
 
@@ -194,11 +161,12 @@ common_type_error_t dlogg_mac_read(uint8_t *buffer, size_t length,
 		rd = read(dlogg_mac_ttyFD, &buffer[length - remaining], remaining);
 		if (rd == 0) {
 			logging_adapter_info("Timeout while reading from d-logg. %u more bytes "
-					"expected", (unsigned int) remaining);
+					"expected, got %u so far.", (unsigned) remaining,
+					(unsigned) length - remaining);
 			return COMMON_TYPE_ERR_TIMEOUT;
 		} else if (rd < 0) {
 			logging_adapter_info("Can't read %u more bytes of data from d-logg: %s",
-					(unsigned int) remaining, strerror(errno));
+					(unsigned) remaining, strerror(errno));
 			return COMMON_TYPE_ERR_IO;
 		}
 		remaining -= rd;
@@ -246,38 +214,6 @@ static void dlogg_mac_updateChksum(uint8_t * buffer, size_t length,
 			*chksum = (*chksum + buffer[i]) & 0xFF;
 		}
 	}
-}
-
-/**
- * @brief Writes the buffer's content nicely formatted to the debug logger
- * @param name The buffer's name
- * @param buffer A valid buffer reference holding at least length bytes
- * @param length The number of bytes to write
- */
-static void dlogg_mac_debug_buffer(const char* name, uint8_t* buffer,
-		size_t length) {
-	int i;
-	char* strBuffer = malloc(length * 3 + 1);
-
-	assert(buffer != NULL);
-	assert(name != NULL);
-
-	if (strBuffer == NULL ) {
-		logging_adapter_debug("malloc failed");
-		return;
-	}
-
-	for (i = 0; i < length; i++) {
-		if (sprintf(&strBuffer[3 * i], "%x ", (unsigned int) buffer[i]) != 3) {
-			logging_adapter_debug("sprintf failed");
-			return;
-		}
-	}
-
-	logging_adapter_debug("Buffer %s (length: %u): | %s|", name,
-			(unsigned int) length, strBuffer);
-
-	free(strBuffer);
 }
 
 common_type_error_t fieldbus_mac_free() {

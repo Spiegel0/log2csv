@@ -23,11 +23,11 @@ timeHeader="Time stamp";
 # parameters needed. The mandatory name directive corresponds to the module's 
 # typee. 
 mac=(
-#	{
-#		name="lib/log2csv/logging-fieldbus.so";
-#		# The tty interface to use
-#		interface="/dev/ttyO4";
-#	},
+	{
+		name="lib/log2csv/logging-fieldbus.so";
+		# The tty interface to use
+		interface="/dev/ttyO4";
+	},
 	{
 		name="lib/log2csv/dlogg.so";
 		# The virtual tty interface to use
@@ -39,22 +39,27 @@ mac=(
 # The channels to log
 # Each channel corresponds to a column within the CSV file. 
 channel=(
-#	{
-#		# The mandatory name of the driver module
-#		type="lib/log2csv/logging-fieldbus-temperature.so";
-#		# The mandatory title of the channel used to label the CSV column 
-#		title="T Network cubicle";
-#		# The address of the device to rerad
-#		address={
-#			device_id=1;
-#			channel_id=0;
-#		};
-#	},
+	{
+		# The mandatory name of the driver module
+		type="lib/log2csv/logging-fieldbus-temperature.so";
+		# The mandatory title of the channel used to label the CSV column 
+		title="T Network cubicle";
+		# The address of the device to rerad
+		address={
+			device_id=1;
+			channel_id=0;
+		};
+	},
+
+  # ############################################################################
+  # Control Input Values 
+  # ############################################################################
+
   {
 		# The mandatory name of the driver module
 		type="lib/log2csv/dlog-stdval.so";
   	# The mandatory title of the channel used to label the CSV column 
-		title="S1 - Sensor";
+		title="Kollektortemperatur S1";
 		# The address of the device to rerad
 		address={
 			# The identifier of d-logg's input channel [1,2]  
@@ -66,12 +71,184 @@ channel=(
 			#  E -> external input
 			#  A -> digital output 
 			#  A.D -> analog output drive
-			#  A.O -> analog output voltage
+			#  A.A -> analog output voltage
 			#  WMZ.P -> heat meter, current power
 			#  WMZ.E -> heat meter, energy registered
-			channel_prefix="S"
+			channel_prefix="S";
 			# The channel number 
-			channel_number="1"
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pufferspeicher-unten S2";
+		address={
+			controller=1;
+			channel_prefix="S";
+			channel_number=2;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Solar-Vorlauf S3";
+		address={
+			controller=1;
+			channel_prefix="S";
+			channel_number=3;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pufferspeicher-oben S4";
+		address={
+			controller=1;
+			channel_prefix="S";
+			channel_number=4;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Nahwärme-Vorlauf F1";
+		address={
+			controller=2;
+			channel_prefix="S";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pufferspeicher-O.27-unten F2";
+		address={
+			controller=2;
+			channel_prefix="S";
+			channel_number=2;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pufferspeicher-mitte F3";
+		address={
+			controller=2;
+			channel_prefix="S";
+			channel_number=3;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Nahwärme-Vorlauf O.27 F4";
+		address={
+			controller=2;
+			channel_prefix="S";
+			channel_number=4;
+		};
+  },
+  
+  # ############################################################################
+  # Control Output Values 
+  # ############################################################################
+  
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Solarpumpe SA1";
+		address={
+			controller=1;
+			channel_prefix="A";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Solarpumpe DZ SA1";
+		address={
+			controller=1;
+			channel_prefix="A.D";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Schichtladung-oben SA2";
+		address={
+			controller=1;
+			channel_prefix="A";
+			channel_number=2;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pumpe-Nahwärme O.27 FA1";
+		address={
+			controller=2;
+			channel_prefix="A";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pumpe-Nahwärme O.27 DZ FA1";
+		address={
+			controller=2;
+			channel_prefix="A.D";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pumpe-Nahwärme O.25 FA2";
+		address={
+			controller=2;
+			channel_prefix="A";
+			channel_number=2;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Pumpe-Nahwärme O.27 (redundant) FA3";
+		address={
+			controller=2;
+			channel_prefix="A";
+			channel_number=3;
+		};
+  },
+  
+  # ############################################################################
+  # Heat Meter
+  # ############################################################################
+  
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Leistung Solaranlage";
+		address={
+			controller=1;
+			channel_prefix="WMZ.P";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Wärmemenge Solaranlage";
+		address={
+			controller=1;
+			channel_prefix="WMZ.E";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Leistung Nahwärme";
+		address={
+			controller=2;
+			channel_prefix="WMZ.P";
+			channel_number=1;
+		};
+  },
+  {
+		type="lib/log2csv/dlog-stdval.so";
+		title="Wärmemenge Nahwärme";
+		address={
+			controller=2;
+			channel_prefix="WMZ.E";
+			channel_number=1;
 		};
   }
 );

@@ -52,8 +52,12 @@ typedef struct {
 typedef struct {
 	/** @brief The configuration snippet defining the address */
 	config_setting_t *address;
-	/** @brief The associated application layer module */
-	pfm_app_t* app;
+	/**
+	 * @brief The index of the associated application layer module
+	 * @details The module's address may change if new module were registered, the
+	 * index will remain.
+	 */
+	int appIndex;
 } pfm_channel_t;
 
 /** @brief The size of the MAC module vector*/
@@ -76,12 +80,12 @@ static inline common_type_error_t pfm_installMacModule(
 		config_setting_t *modConfig, const unsigned int index);
 static inline common_type_error_t pfm_freeMac(void);
 static inline common_type_error_t pfm_freeAppModules(void);
-static pfm_app_t * pfm_getAppModule(const char* driverName);
-static pfm_app_t * pfm_loadAppModule(const char* name);
+static int pfm_getAppIndex(const char* driverName);
+static int pfm_loadAppModule(const char* name);
 static void pfm_appVectorRollback(void);
 static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 		pfm_app_t *app);
-static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address);
+static inline int pfm_newChannel(int appIndex, config_setting_t *address);
 
 /**
  * @brief Extracts the module's names and loads them.
@@ -227,7 +231,7 @@ static inline common_type_error_t pfm_installMacModule(
 int pfm_addChannel(config_setting_t* channelConf) {
 	const char* driver = "";
 	config_setting_t *address;
-	pfm_app_t *appModule = NULL;
+	int appIndex = -1;
 
 	assert(channelConf != NULL);
 
@@ -251,30 +255,32 @@ int pfm_addChannel(config_setting_t* channelConf) {
 	}
 
 	// obtain the device driver
-	appModule = pfm_getAppModule(driver);
-	if (appModule == NULL ) {
+	appIndex = pfm_getAppIndex(driver);
+	if (appIndex < 0 ) {
 		logging_adapter_debug("Try to load application module \"%s\"", driver);
-		appModule = pfm_loadAppModule(driver);
+		appIndex = pfm_loadAppModule(driver);
 	}
-	if (appModule == NULL ) {
+	if (appIndex < 0 ) {
 		return -1;
 	}
 
-	return pfm_newChannel(appModule, address);
+	return pfm_newChannel(appIndex, address);
 }
 
 /**
  * @brief Adds a new channel to the list of known channels and returns it's id
  * @details If the function is unable to obtain memory -1 is returned.
- * @param app A valid reference to the previously loaded app module
+ * @param appIndex The index of the previously loaded app module within it's
+ * vector
  * @param address The channel's address configuration
  * @return The index of the newly created channel
  */
-static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address) {
+static inline int pfm_newChannel(int appIndex, config_setting_t *address) {
 	unsigned int index = pfm_channelVectorLength;
 	pfm_channel_t * oldVector = pfm_channelVector;
 
-	assert(app != NULL);
+	assert(appIndex >= 0);
+	assert(appIndex < pfm_appVectorLength);
 	assert(address != NULL);
 
 	pfm_channelVector = realloc(pfm_channelVector,
@@ -288,7 +294,7 @@ static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address) {
 	pfm_channelVectorLength++;
 
 	pfm_channelVector[index].address = address;
-	pfm_channelVector[index].app = app;
+	pfm_channelVector[index].appIndex = appIndex;
 
 	return index;
 }
@@ -299,11 +305,11 @@ static inline int pfm_newChannel(pfm_app_t *app, config_setting_t *address) {
  * @details It assumes that the name used to lookup the shared library module
  * isn't null.
  * @param name The name or path of the application layer module
- * @return A reference to the newly created list entry or null.
+ * @return The index of the newly created list entry or -1.
  */
-static pfm_app_t * pfm_loadAppModule(const char* name) {
+static int pfm_loadAppModule(const char* name) {
 	pfm_app_t *oldVector = pfm_appVector;
-	pfm_app_t *ret;
+	pfm_app_t *app;
 	fieldbus_application_init_t init;
 	common_type_error_t err;
 
@@ -314,25 +320,25 @@ static pfm_app_t * pfm_loadAppModule(const char* name) {
 	if (pfm_appVector == NULL ) {
 		pfm_appVector = oldVector;
 		logging_adapter_info("Can't obtain more memory");
-		return NULL ;
+		return -1 ;
 	}
 	pfm_appVectorLength++;
-	ret = &pfm_appVector[pfm_appVectorLength - 1];
-	memset(ret, 0, sizeof(ret[0]));
+	app = &pfm_appVector[pfm_appVectorLength - 1];
+	memset(app, 0, sizeof(app[0]));
 
-	ret->name = name;
-	ret->handler = dlopen(name, RTLD_NOW);
-	if (ret->handler == NULL ) {
+	app->name = name;
+	app->handler = dlopen(name, RTLD_NOW);
+	if (app->handler == NULL ) {
 		pfm_appVectorRollback();
 		logging_adapter_info("Can't load application module \"%s\": %s", name,
 				dlerror());
-		return NULL ;
+		return -1 ;
 	}
 
-	init = pfm_lookupAppInterfaceFunctions(ret);
+	init = pfm_lookupAppInterfaceFunctions(app);
 	if (init == NULL ) {
 		pfm_appVectorRollback();
-		return NULL ;
+		return -1 ;
 	}
 
 	err = init();
@@ -340,10 +346,10 @@ static pfm_app_t * pfm_loadAppModule(const char* name) {
 		pfm_appVectorRollback();
 		logging_adapter_info("Can't initialize the \"%s\" module (err-no: %d)",
 				name, (int) err);
-		return NULL ;
+		return -1 ;
 	}
 
-	return ret;
+	return pfm_appVectorLength - 1;
 }
 
 /**
@@ -424,11 +430,11 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 /**
  * @brief Fetches the application layer module with the given name.
  * @details It assumes that the given driverName reference isn't null. If the
- * module isn't present null will be returned.
+ * module isn't present -1 will be returned.
  * @param driverName The name of the application layer module
- * @return The module list entry or null
+ * @return The module list index or -1
  */
-static pfm_app_t* pfm_getAppModule(const char* driverName) {
+static int pfm_getAppIndex(const char* driverName) {
 	unsigned int i;
 	assert(driverName != NULL);
 	assert(pfm_appVector == NULL || pfm_appVectorLength > 0);
@@ -436,10 +442,10 @@ static pfm_app_t* pfm_getAppModule(const char* driverName) {
 	for (i = 0; i < pfm_appVectorLength; i++) {
 		assert(pfm_appVector[i].name != NULL);
 		if (strcmp(driverName, pfm_appVector[i].name) == 0) {
-			return &pfm_appVector[i];
+			return i;
 		}
 	}
-	return NULL ;
+	return -1 ;
 }
 
 /**
@@ -464,9 +470,9 @@ common_type_error_t pfm_sync() {
 	common_type_error_t err;
 
 	// Sync MAC layer
-	for(i=0;i<pfm_macVectorLength;i++){
+	for (i = 0; i < pfm_macVectorLength; i++) {
 		err = pfm_macVector[i].sync();
-		if(err != COMMON_TYPE_SUCCESS){
+		if (err != COMMON_TYPE_SUCCESS) {
 			logging_adapter_info("The MAC module nr. %d can't be synchronized "
 					"correctly.", i + 1);
 			return err;
@@ -474,9 +480,9 @@ common_type_error_t pfm_sync() {
 	}
 
 	// Sync App layer
-	for(i=0; i<pfm_appVectorLength; i++){
+	for (i = 0; i < pfm_appVectorLength; i++) {
 		err = pfm_appVector[i].sync();
-		if(err != COMMON_TYPE_SUCCESS){
+		if (err != COMMON_TYPE_SUCCESS) {
 			logging_adapter_info("The Application module nr. %d can't be "
 					"synchronized correctly.", i + 1);
 			return err;
@@ -487,9 +493,16 @@ common_type_error_t pfm_sync() {
 }
 
 common_type_t pfm_fetchValue(int id) {
+	fieldbus_application_fetchValue_t fetch;
+
 	assert(id >= 0);
 	assert(id < pfm_channelVectorLength);
-	return pfm_channelVector[id].app->fetchValue(pfm_channelVector[id].address);
+	assert(pfm_channelVector[id].address != NULL);
+	assert(pfm_channelVector[id].appIndex >= 0);
+	assert(pfm_channelVector[id].appIndex < pfm_appVectorLength);
+
+	fetch = pfm_appVector[pfm_channelVector[id].appIndex].fetchValue;
+	return fetch(pfm_channelVector[id].address);
 }
 
 common_type_error_t pfm_free() {

@@ -59,6 +59,12 @@ typedef struct {
 	dlogg_cd_moduleType_t moduleType;
 	/** @brief The read mode of operation */
 	uint8_t mode;
+	/**
+	 * @brief number of currently available (samples)
+	 * @details The function will be calculated based on the other meta-data
+	 * values and set after the corresponding samples are read
+	 */
+	uint8_t sampleCount;
 } dlogg_cd_metadata_t;
 
 /** @brief Encapsulates a single input's data */
@@ -66,12 +72,12 @@ typedef union {
 	struct {
 		/** @brief The low byte of the value */
 		uint8_t lowValue;
-		/** @brief The signature bit */
-		unsigned sign :1;
-		/** @brief The input type encoding */
-		unsigned type :3;
 		/** @brief The most significant value bits */
 		unsigned highValue :4;
+		/** @brief The input type encoding */
+		unsigned type :3;
+		/** @brief The signature bit */
+		unsigned sign :1;
 	} val;
 	/** @brief The raw type encoding */
 	uint8_t raw[2];
@@ -82,10 +88,13 @@ typedef union {
  */
 typedef union {
 	struct {
-		/** @brief Flag indicating that the output is active */
-		unsigned active :1;
 		/** @brief The output voltage (0-10V) in 0.1V */
 		unsigned voltage :7;
+		/**
+		 * @brief Flag indicating that the output is active
+		 * @details The flag is active low
+		 */
+		unsigned activeN :1;
 	} val;
 	/** @brief The raw output data */
 	uint8_t raw;
@@ -95,12 +104,15 @@ typedef union {
  * @brief Defines a bit-field storing output drive data
  */
 typedef struct {
-	/** @brief Flag indicating the status of the output */
-	unsigned active :1;
-	/** @brief Bits to ignore */
-	unsigned ign :2;
 	/** @brief speed step [0,30] */
 	unsigned speed :5;
+	/** @brief Bits to ignore */
+	unsigned ign :2;
+	/**
+	 * @brief Flag indicating the status of the output
+	 * @details The flag is active low
+	 */
+	unsigned activeN :1;
 } dlogg_cd_outputDrive_t;
 
 /**

@@ -97,7 +97,7 @@ void logging_adapter_debug(const char* formatString, ...) {
 	(void) vfprintf(stdout, formatString, varArg);
 	(void) fprintf(stdout, "\n");
 	va_end(varArg);
-
+	(void) fflush(stdout);
 }
 
 void logging_adapter_freeResources(void) {

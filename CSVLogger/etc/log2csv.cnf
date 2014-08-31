@@ -23,33 +23,55 @@ timeHeader="Time stamp";
 # parameters needed. The mandatory name directive corresponds to the module's 
 # typee. 
 mac=(
+#	{
+#		name="lib/log2csv/logging-fieldbus.so";
+#		# The tty interface to use
+#		interface="/dev/ttyO4";
+#	},
 	{
-		name="../LoggingFieldbusModule/logging-fieldbus.so";
-		# The tty interface to use
-		interface="/dev/ttyUSB1";
+		name="lib/log2csv/dlogg.so";
+		# The virtual tty interface to use
+		interface="/dev/ttyUSB0";
 	}
+	
 );
 
 # The channels to log
 # Each channel corresponds to a column within the CSV file. 
 channel=(
-	{
+#	{
+#		# The mandatory name of the driver module
+#		type="lib/log2csv/logging-fieldbus-temperature.so";
+#		# The mandatory title of the channel used to label the CSV column 
+#		title="T Network cubicle";
+#		# The address of the device to rerad
+#		address={
+#			device_id=1;
+#			channel_id=0;
+#		};
+#	},
+  {
 		# The mandatory name of the driver module
-		type="../LoggingFieldbusModule/logging-fieldbus-temperature.so";
-		# The mandatory title of the channel used to label the CSV column 
-		title="T1";
+		type="lib/log2csv/dlog-stdval.so";
+  	# The mandatory title of the channel used to label the CSV column 
+		title="S1 - Sensor";
 		# The address of the device to rerad
 		address={
-			device_id=1;
-			channel_id=0;
+			# The identifier of d-logg's input channel [1,2]  
+			controller=1;
+			# Optional ID specifying a line multiplexing channel 
+			line_id=0;
+			# Channel prefix specifying the channel
+			#  S -> input
+			#  E -> external input
+			#  A -> digital output 
+			#  A.D -> analog output drive
+			#  A.O -> analog output voltage
+			#  WMZ.P -> heat meter, current power
+			#  WMZ.E -> heat meter, energy registered
+			channel_prefix="S"
+			# The channel number 
+			channel_number="1"
 		};
-	},
-	{
-		type="../LoggingFieldbusModule/logging-fieldbus-temperature.so";
-		title="T2";
-		address={
-			device_id=1;
-			channel_id=1;
-		};
-	}
+  }
 );

@@ -71,8 +71,9 @@ common_type_error_t fieldbus_mac_sync() {
 }
 
 /**
- * @brief Fetches to currently set value and stores them into the buffer
- * @details The function assumes that the line's metadata were previously set.
+ * @brief Fetches to currently set value and stores them into the global buffer
+ * @details The function assumes that the line's meta-data were previously set.
+ * The sampleCOunt field will be updated according the read data.
  * @param activeLine The line id, currently active
  * @return The status of the operation
  */
@@ -143,6 +144,9 @@ static inline common_type_error_t dlogg_cd_fetchCurrentData(uint8_t activeLine) 
 				(unsigned) sampleType[i]);
 	}
 
+	// update sample count
+	lineData->metaData.sampleCount = sampleCount;
+
 	return COMMON_TYPE_SUCCESS;
 }
 
@@ -199,7 +203,8 @@ static inline int dlogg_cd_getSampleType(uint8_t deviceID,
 /**
  * @brief Returns the number of expected samples
  * @details The returned value is based on the current operational mode. It is
- * expected that the meta-data section passed is valid
+ * expected that the meta-data section passed is valid but the smapleCount field
+ * won't be evaluated.
  * @param metadata A valid meta-data reference
  * @return The number of samples expected
  */
@@ -428,10 +433,10 @@ dlogg_cd_metadata_t * dlogg_cd_getMetadata(uint8_t lineID) {
 
 dlogg_cd_sample_t * dlogg_cd_getCurrentData(uint8_t device, uint8_t lineID) {
 	dlogg_cd_lineData_t *line = dlogg_cd_getLineData(lineID);
-	if (line != NULL && device < DLOGG_CD_MAX_SAMPLES_PER_MSG) {
+	if (line != NULL && device < line->metaData.sampleCount) {
 		return &line->samples[device];
 	} else {
-		return NULL ;
+		return NULL;
 	}
 }
 

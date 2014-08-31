@@ -83,11 +83,19 @@ static inline common_type_t dlogg_stdval_fetchADChannel(
 		dlogg_cd_sample_t* sample, uint8_t channelID);
 static inline common_type_t dlogg_stdval_fetchAAChannel(
 		dlogg_cd_sample_t* sample, uint8_t channelID);
+static inline common_type_t dlogg_stdval_fetchWMZEChannel(
+		dlogg_cd_sample_t* sample, uint8_t channelID);
+static inline common_type_t dlogg_stdval_fetchWMZPChannel(
+		dlogg_cd_sample_t* sample, uint8_t channelID);
 static common_type_t dlogg_stdval_input2common(dlogg_cd_input_t input);
 static common_type_t dlogg_stdval_outputDrive2common(
 		dlogg_cd_outputDrive_t outputDrive);
 static common_type_t dlogg_stdval_analogOutput2common(
 		dlogg_cd_analogOutput_t analogOutput);
+static common_type_t dlogg_stdval_heatMeterSmall2commonEnergy(
+		dlogg_cd_heatMeterSmall_t * heatMeter);
+static common_type_t dlogg_stdval_heatMeterSmall2commonPower(
+		dlogg_cd_heatMeterSmall_t * heatMeter);
 
 common_type_error_t fieldbus_application_init(void) {
 	// Nothing to be done
@@ -153,8 +161,10 @@ static inline common_type_t dlogg_stdval_fetchValue(dlogg_stdval_addr_t * addr) 
 		ret = dlogg_stdval_fetchAAChannel(sample, addr->channelID);
 		break;
 	case DLOGG_STDVAL_PRE_WMZE:
+		ret = dlogg_stdval_fetchWMZEChannel(sample, addr->channelID);
 		break;
 	case DLOGG_STDVAL_PRE_WMZP:
+		ret = dlogg_stdval_fetchWMZPChannel(sample, addr->channelID);
 		break;
 	default:
 		assert(0);
@@ -299,6 +309,122 @@ static inline common_type_t dlogg_stdval_fetchAAChannel(
 	default:
 		assert(0);
 	}
+	return ret;
+}
+
+/**
+ * @brief Fetches the heat meter energy value from the given sample
+ * @details It assumes that all values are valid and that the ranges are checked
+ * @param sample The reference to the addressed sample
+ * @param channelID The valid channel identifier
+ * @return The result of the operation
+ */
+static inline common_type_t dlogg_stdval_fetchWMZEChannel(
+		dlogg_cd_sample_t* sample, uint8_t channelID) {
+	common_type_t ret;
+
+	assert(sample != NULL);
+
+	ret.type = COMMON_TYPE_ERROR;
+	ret.data.errVal = COMMON_TYPE_ERR;
+
+	switch (sample->sampleType) {
+	case DLOGG_CD_SAMPLE_UVR_61_3_V14:
+		assert(channelID < 3);
+
+		if (sample->data.uvr61_3_v14.heatMeterRegister & (1 << channelID)) {
+			ret = dlogg_stdval_heatMeterSmall2commonEnergy(
+					&sample->data.uvr61_3_v14.heatMeter[channelID]);
+		} else {
+			logging_adapter_info("The heat meter %u is not active",
+					(unsigned) channelID + 1);
+			ret.type = COMMON_TYPE_ERROR;
+			ret.data.errVal = COMMON_TYPE_ERR_INVALID_ADDRESS;
+		}
+
+		break;
+	default:
+		assert(0);
+	}
+	return ret;
+}
+
+/**
+ * @brief Fetches the heat meter power value from the given sample
+ * @details It assumes that all values are valid and that the ranges are checked
+ * @param sample The reference to the addressed sample
+ * @param channelID The valid channel identifier
+ * @return The result of the operation
+ */
+static inline common_type_t dlogg_stdval_fetchWMZPChannel(
+		dlogg_cd_sample_t* sample, uint8_t channelID) {
+	common_type_t ret;
+
+	assert(sample != NULL);
+
+	ret.type = COMMON_TYPE_ERROR;
+	ret.data.errVal = COMMON_TYPE_ERR;
+
+	switch (sample->sampleType) {
+	case DLOGG_CD_SAMPLE_UVR_61_3_V14:
+		assert(channelID < 3);
+
+		if (sample->data.uvr61_3_v14.heatMeterRegister & (1 << channelID)) {
+			ret = dlogg_stdval_heatMeterSmall2commonPower(
+					&sample->data.uvr61_3_v14.heatMeter[channelID]);
+		} else {
+			logging_adapter_info("The heat meter %u is not active",
+					(unsigned) channelID + 1);
+			ret.type = COMMON_TYPE_ERROR;
+			ret.data.errVal = COMMON_TYPE_ERR_INVALID_ADDRESS;
+		}
+
+		break;
+	default:
+		assert(0);
+	}
+	return ret;
+}
+
+/**
+ * @brief Converts the heat meter energy to a common type
+ * @details It is assumed that the given reference is valid. The common type
+ * will be scaled to kWh
+ * @param heatMeter The heat meter structure
+ * @return The conversion result
+ */
+static common_type_t dlogg_stdval_heatMeterSmall2commonEnergy(
+		dlogg_cd_heatMeterSmall_t * heatMeter) {
+	common_type_t ret;
+
+	assert(heatMeter != NULL);
+
+	ret.type = COMMON_TYPE_DOUBLE;
+	ret.data.doubleVal = (((uint16_t) heatMeter->val.kwh[0])
+			+ (((uint16_t) heatMeter->val.kwh[1]) << 8)) * 0.1;
+	ret.data.doubleVal += (((uint16_t) heatMeter->val.mwh[0])
+			+ (((uint16_t) heatMeter->val.mwh[1]) << 8)) * 1000.0;
+
+	return ret;
+}
+
+/**
+ * @brief Converts the heat meter power to a common type
+ * @details It is assumed that the given reference is valid. The common type
+ * will be scaled to kW
+ * @param heatMeter The heat meter structure
+ * @return The conversion result
+ */
+static common_type_t dlogg_stdval_heatMeterSmall2commonPower(
+		dlogg_cd_heatMeterSmall_t * heatMeter) {
+	common_type_t ret;
+
+	assert(heatMeter != NULL);
+
+	ret.type = COMMON_TYPE_DOUBLE;
+	ret.data.doubleVal = (((uint16_t) heatMeter->val.cur[0])
+			+ (((uint16_t) heatMeter->val.cur[1]) << 8)) * 0.1;
+
 	return ret;
 }
 

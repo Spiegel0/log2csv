@@ -22,7 +22,7 @@
 
 #ifndef DEF_CONFIG
 /** @brief The name of the default configuration file location */
-#define DEF_CONFIG ("etc/log2csv.cnf")
+#define DEF_CONFIG ("/etc/log2csv.cnf")
 #endif
 
 /**

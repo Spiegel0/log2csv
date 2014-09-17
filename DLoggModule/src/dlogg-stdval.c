@@ -1,12 +1,29 @@
 /**
  * @file dlogg-stdval.c
  * @brief Module fetching a previously buffered value.
- * @details The value has to be represented by the TA-standard encoding. On
- * fetching the value first the user input is parsed into an address structure.
- * Secondly the address structure is validated against a sample-type dependent
- * profile and the addressed value is extracted. For each type of channel a
- * separate function exists encapsulating the different access functionality.
+ * @details The value has to be represented by the TA-standard encoding stated
+ * in the controller's manual. On fetching the value, first the user input is
+ * parsed into an address structure. Secondly the address structure is validated
+ * against a sample-type dependent profile and the addressed value is extracted.
+ * For each type of channel a separate function exists encapsulating different
+ * access functionality. (This is why there are so many functions ;-) )
+ *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
+ *
+ * Copyright (C) 2014 Michael Spiegel
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #include <fieldbus-application.h>

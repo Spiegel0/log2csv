@@ -6,7 +6,7 @@
 # access control module (MAC) is responsible for driving a certain kind of 
 # message interface.
 #
-# Author: Michael Spiegel, michael.h.spiegel@gmail.com 
+# Author: Michael Spiegel, michael.h.spiegel@gmail.com
 # ##############################################################################
 
 # The filename to append the data. The programm will create the file and append

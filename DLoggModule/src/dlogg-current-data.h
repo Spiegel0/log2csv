@@ -1,9 +1,25 @@
 /**
  * @file dlogg-current-data.h
- * @brief Communicates with the dlogg logger and reads the current data.
+ * @brief Communicates with the dlogg logging device and reads current data.
  * @details The module provides function used to access the read data structure
  * as well as present end devices.
+ *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
+ *
+ * Copyright (C) 2014 Michael Spiegel
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; version 2 of the License
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
 #ifndef DLOGG_CURRENT_DATA_H_

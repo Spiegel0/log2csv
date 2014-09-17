@@ -1,17 +1,32 @@
 # @brief The Makefile builds the CSVLogger application for different platforms 
 # @details The phony target all creates the program and all it's files. clean 
 # deletes every previously generated file by running a simple rm command. This 
-# Makefile was primary developed and tested with GNU Make under Linux 2.6. It 
+# Makefile was primary developed and tested with GNU Make under Linux 3.8. It 
 # may not work using other platforms.
 #
 # @author Michael Spiegel, michael.h.spiegel@gmail.com
 #
+# Copyright (C) 2014 Michael Spiegel
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 
-# The compiler command is instructed by the official programming guidelines
+# The compiler command
 #CC = gcc
 CC=arm-linux-gnueabihf-gcc
 
-# The compiler flags are also instructed by the official programming guidelines
+# The compiler flags
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -DENDEBUG 

@@ -60,15 +60,15 @@ common_type_error_t fieldbus_application_sync(void);
 /** @brief The pointer type of the fieldbus_application_sync function */
 typedef common_type_error_t (*fieldbus_application_sync_t)(void);
 
-/** @brief The name of the fieldbus_application_fetchValue function */
+/** @brief The name of the fieldbus_application_sync function */
 #define FIELDBUS_APPLICATION_SYNC_NAME "fieldbus_application_sync"
 
 /**
  * @brief Retrieves a measured value from the end device.
- * @details <p>The measured value has to be returned appropriately scaled by the
- * corresponding SI unit. On returning string references the buffer must be
- * valid until the next function of the module is called. The error type must
- * only be used if the value can not be fetched.</p>
+ * @details <p>The measured value has to be returned appropriately scaled and
+ * must be represented using the the corresponding SI unit. On returning string
+ * references the buffer must be valid until the next function of the module is
+ * called. The error type must only be used if the value can not be fetched.</p>
  * <p>The given address will be directly passed from the read configuration
  * file. It encapsulates every information entered but may not be complete.</p>
  * @param address The configuration snippet specifying the address

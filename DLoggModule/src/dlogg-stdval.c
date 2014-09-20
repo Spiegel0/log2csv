@@ -40,12 +40,19 @@
 #define DLOGG_STDVAL_CONFIG_CHN_NR "channel_number"
 
 /* The prefix configuration keys */
+/** @brief Internal sensor input channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_S "S"
+/** @brief External sensor input chanel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_E "E"
+/** @brief Digital output channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_A "A"
+/** @brief Drive output channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_AD "A.D"
+/** @brief Analog output channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_AA "A.A"
+/** @brief Heat meter power channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_WMZP "WMZ.P"
+/** @brief Heat meter energy channel prefix */
 #define DLOGG_STDVAL_CONFIG_PRE_WMZE "WMZ.E"
 
 /** @brief Defines possible prefix values */
@@ -146,7 +153,7 @@ common_type_t fieldbus_application_fetchValue(config_setting_t *address) {
 
 /**
  * @brief Fetches the value specified by the given address and returns it.
- * @detaisl it asumes that the given address is valid and previously checked.
+ * @details it assumes that the given address is valid and previously checked.
  * @param addr A valid reference to an address structure
  * @return The fetched result or an appropriate error code.
  */
@@ -191,7 +198,7 @@ static inline common_type_t dlogg_stdval_fetchValue(dlogg_stdval_addr_t * addr) 
 }
 
 /**
- * @brief Fetches the given Input value from the given sample
+ * @brief Fetches the given input value from the given sample
  * @details It assumes that all values are valid and that the ranges are checked
  * @param sample The reference to the addressed sample
  * @param channelID The valid channel identifier
@@ -493,7 +500,7 @@ static common_type_t dlogg_stdval_outputDrive2common(
 
 /**
  * @brief Translates the input type into a properly scaled common type
- * @details Temperatures will be scaled in degree Celsius,volume flow to l/h,
+ * @details Temperatures will be scaled in degree Celsius, volume flow to l/h,
  * radiation to W/m^2 and boolean values to [0,1]. If the input is not set the
  * function will return an error.
  * @param input The input to translate

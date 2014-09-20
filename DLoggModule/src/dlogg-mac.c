@@ -82,7 +82,7 @@ common_type_error_t fieldbus_mac_init(config_setting_t* configuration) {
  * @details It assumes that the global file descriptor is currently closed (-1)
  * and that the given interface string is valid. After successfully opening the
  * device the termois settings will be saved globally.
- * @param inerface The interface path to open
+ * @param interface The interface path to open
  * @return The status of the operation
  */
 static inline common_type_error_t dlogg_mac_initTTY(const char* interface) {

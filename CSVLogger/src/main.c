@@ -41,18 +41,18 @@
 #define DEF_CONFIG ("/etc/log2csv.cnf")
 #endif
 
-/**
- * @brief If this macro is defined the error message will be printed to stderr
- * also
- */
-#define OUTPUT_ERROR_DIRECTLY
-
 /* Exit code definitions */
+/** @brief Exit code indicating invalid program options */
 #define EXIT_ERR_PROGOPTS (1)
+/** @brief Exit code indicating configuration errors */
 #define EXIT_ERR_CONFIG (2)
+/** @brief Exit code indicating errors during initializing the logging facility*/
 #define EXIT_ERR_LOGGING (3)
+/** @brief Exit code indicating network errors */
 #define EXIT_ERR_NETWORK (4)
+/** @brief Exit code indicating errors during accessing the output file */
 #define EXIT_ERR_OUTFILE (5)
+/** @brief Exit code indicating errors during accessing local system functions*/
 #define EXIT_ERR_LOCAL_SYS (6)
 
 /* Configuration directive names */
@@ -72,7 +72,7 @@
 /** @brief The size of the buffer used to store time stamps */
 #define MAIN_TIMESTAMP_BUFFER_SIZE 40
 
-/** @brief Entry used to form the list of channels to query */
+/** @brief List entry used to form the list of channels to query */
 typedef struct {
 	/** @brief The identifier given by the network stack */
 	int channelID;
@@ -127,7 +127,7 @@ static void main_appendResult(FILE *file, const common_type_t *result);
 static void main_appendTimestamp(FILE *file, struct timeval *tv);
 
 /**
- * @brief Main program entry
+ * @brief Main program entry point
  * @param argc The number of passed arguments including the program's name
  * @param argv The zero terminated argument vector
  * @return 0 on success, a positive value otherwise
@@ -196,10 +196,10 @@ static inline void main_initOutputFile() {
 }
 
 /**
- * @brief Writes the CSVHeader to the previously opened csvOut file.
- * @details <p>It assumes that the csvOut file as well as the configuration is
+ * @brief Writes the CSV header to the previously opened csvOut file.
+ * @details <p>It assumes that the csvOut file as well as the configuration are
  * initialized and that the channelVector is fully populated. The function will
- * bail out if an error occurred.</p>
+ * bail out if an error occurs.</p>
  * <p>The first column will be the time stamp header. The field is taken from
  * the configuration. If no configuration setting is present a default value
  * will be used.</p>
@@ -243,7 +243,7 @@ static void main_writeCSVHeader() {
 }
 
 /**
- * @brief Initialized global network related variables and loads the network
+ * @brief Initializes global network related variables and loads the network
  * stack.
  * @details It assumes that the configuration was successfully loaded and that
  * the program options are parsed. It will bail out if an error occurs.
@@ -335,7 +335,7 @@ static inline void main_initConfig(void) {
 }
 
 /**
- * @brief Fetches the values from the configured channels and writes them to the
+ * @brief Fetches the values from each configured channel and writes them to the
  * previously opened CSV file.
  * @details The network stack needs to be initialized but the function will call
  * the sync function on it's own. If something went wrong during printing or
@@ -386,14 +386,14 @@ static void main_processSamples() {
 }
 
 /**
- * @brief Formats the given timestamp and appends it to the file
+ * @brief Formats the given time-stamp and appends it to the file
  * @details <p>It assumes that both references are valid. If an error occurs
  * during writing the data the function will bail out. The function also assumes
  * that the configuration was previously initialized.</p>
  * <p>The given timeval structure is converted to a local time and printed
  * afterwards. The format is taken from the corresponding configuration
  * directive.</p>
- * @param file The file reference to write
+ * @param file The file to write to
  * @param tv The time stamp to print
  *
  */
@@ -424,10 +424,10 @@ static void main_appendTimestamp(FILE *file, struct timeval *tv) {
 /**
  * @brief Appends the value to the given file
  * @details It assumes that the given references are valid. No column
- * separation character will be printed. If the data can't be successfully
- * written to the file the function will bail out.
- * @param file
- * @param result
+ * separation character will be printed. If the function can not append the data
+ * successfully, the function will bail out.
+ * @param file The file reference used to append the result
+ * @param result The result to append
  */
 static void main_appendResult(FILE *file, const common_type_t *result) {
 	int err = 0;
@@ -463,7 +463,7 @@ static void main_appendResult(FILE *file, const common_type_t *result) {
  * character will be escaped using two double quotes. No column separator is
  * appended. The terminating '\0' character won't be written.</p>
  * <p>If something went wrong the function will call main_bailOut</p>
- * @param file A valid file reference to apend the CSV data
+ * @param file A valid file reference to append the CSV data
  * @param str The string to append
  */
 static void main_appendString(FILE *file, const char* str) {
@@ -502,7 +502,7 @@ static void main_appendString(FILE *file, const char* str) {
  * structure.
  * @details It is expected that the progname reference was set before and that
  * the logging facilities are properly initializes.
- * @param argc The number op passed arguments
+ * @param argc The number of passed arguments
  * @param argv The argument vector
  */
 static void main_parseProgOpts(int argc, char** argv) {
@@ -570,13 +570,11 @@ static void main_freeResources(void) {
 }
 
 /**
- * @brief Logs the error message included in format string and exits
+ * @brief Logs the error message included in format string and exits.
  * @details The format string has to be a printf-styled string followed by the
  * corresponding number of arguments. If the errno variable is set to a non zero
- * value the corresponding message will also be logged. The function will write
- * to the syslog facility in CRIT and ERR level.
- * If OUTPUT_ERROR_DIRECTLY is defined the error message will be printed to
- * stderr
+ * value the corresponding message will also be logged. The function will use
+ * the previously initialized logging adapter to report the messages
  * @param err The application's exit code. It has to be greater than zero.
  * @param formatString The error message without any "ERROR:" - tag.
  */
@@ -593,5 +591,4 @@ static void main_bailOut(const int err, const char* formatString, ...) {
 
 	main_freeResources();
 	exit(err);
-
 }

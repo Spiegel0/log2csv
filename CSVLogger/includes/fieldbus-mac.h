@@ -31,7 +31,7 @@
 #include <libconfig.h>
 
 /**
- * @brief Initializes the module following the given configuration
+ * @brief Initializes the module according to the given configuration
  * @details The logging facility will be properly initialized before calling.
  * The function will be called exactly once before using any other function of
  * the module. Only after calling the free-function the init function may be
@@ -52,7 +52,7 @@ typedef common_type_error_t (*fieldbus_mac_init_t)(
  * @brief Indicates a global sync event.
  * @details The sync event will be triggered exactly once a cycle before reading
  * any value. The MAC layer's sync functions will be called before the
- * application layer's function.
+ * application layer's sync function.
  * @return The status of the sync operation
  */
 common_type_error_t fieldbus_mac_sync(void);
@@ -64,11 +64,11 @@ typedef common_type_error_t (*fieldbus_mac_sync_t)(void);
 #define FIELDBUS_MAC_SYNC_NAME "fieldbus_mac_sync"
 
 /**
- * @brief Function called to free the used resources
+ * @brief Function called to free used resources
  * @details The function will be called before terminating the program. After
  * the function is called no other function, except init, will be called
  * anymore. The application layer's free functions will be called before the
- * MAC's always.
+ * MAC's free function always.
  * @return The status of the operation
  */
 common_type_error_t fieldbus_mac_free(void);

@@ -57,16 +57,16 @@ int pfm_addChannel(config_setting_t* channelConf);
  * @details The function has to be called before reading one or more values. It
  * tries to take a consistent snapshot of the system. If one or more module
  * issues an error the function will abort the sync process and return the
- * error.
+ * error code.
  * @return The status of the operation
  */
 common_type_error_t pfm_sync(void);
 
 /**
  * @brief Fetches the value from the given channel.
- * @details The sync function has to be called before calling this function.
- * Reading a channel more than once after the sync signal may return
- * inconsistent results.
+ * @details The sync function has to be called before but not necessarily
+ * directly before calling this function. Reading a channel more than once after
+ * the sync signal may return inconsistent results.
  * @param id The unique channel identifier
  * @return The read value or an error code.
  */

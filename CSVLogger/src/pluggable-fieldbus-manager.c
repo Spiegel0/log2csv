@@ -36,7 +36,7 @@
 #define PFM_CONFIG_TYPE "type"
 #define PFM_CONFIG_ADDRESS "address"
 
-/** @brief Structure encapsulating the MAC module's data*/
+/** @brief Structure encapsulating a MAC module's data*/
 typedef struct {
 	/** @brief The handler of the library returned by dlopen */
 	void * handler;
@@ -53,7 +53,7 @@ typedef struct {
 	/**
 	 * @brief The name of the shared object holding the module
 	 * @details The string will be contained within the configuration structure
-	 * and hasn't to be deallocated manually.
+	 * and mustn't be deallocated manually.
 	 */
 	const char* name;
 	/** @brief fieldbus_application_sync function reference of the module */
@@ -70,15 +70,15 @@ typedef struct {
 	config_setting_t *address;
 	/**
 	 * @brief The index of the associated application layer module
-	 * @details The module's address may change if new module were registered, the
-	 * index will remain.
+	 * @details The module's address may change if new modules were registered,
+	 * the index will remain.
 	 */
 	int appIndex;
 } pfm_channel_t;
 
-/** @brief The size of the MAC module vector*/
+/** @brief The size of the MAC module vector */
 static unsigned int pfm_macVectorLength = 0;
-/** @brief The vector containing loaded MAC module handler */
+/** @brief The vector containing the loaded MAC module handlers */
 static pfm_mac_t *pfm_macVector;
 
 /** @brief The number of loaded application modules */
@@ -104,7 +104,7 @@ static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(
 static inline int pfm_newChannel(int appIndex, config_setting_t *address);
 
 /**
- * @brief Extracts the module's names and loads them.
+ * @brief Extracts the MAC module's names and loads the modules.
  * @param configuration The root configuration containing the mac member. The
  * root configuration has to be a group setting always.
  * @return The status of the operation
@@ -116,7 +116,7 @@ common_type_error_t pfm_init(config_setting_t* configuration) {
 
 	assert(config_setting_is_group(configuration));
 
-	// Fetch and check the mac module configuration sections
+	// Fetch and check the MAC module configuration sections
 	mac = config_setting_get_member(configuration, PFM_CONFIG_MAC);
 	if (mac == NULL ) {
 		logging_adapter_info("Can't locate the \"%s\" list directive.",
@@ -149,12 +149,12 @@ common_type_error_t pfm_init(config_setting_t* configuration) {
 }
 
 /**
- * @brief Loads the given module, adds it's handler to the list of known modules
+ * @brief Loads the given module, adds its handler to the list of known modules
  * and initializes it.
- * @details If the configuration is invalid an appropriate error message will
+ * @details If the configuration is invalid, an appropriate error message will
  * be reported.
  * @param modConfig The module's group configuration.
- * @param index The index within the mac vector structure to populate.
+ * @param index The index within the MAC vector structure to populate.
  * @return The status of the operation
  */
 static inline common_type_error_t pfm_installMacModule(
@@ -285,7 +285,7 @@ int pfm_addChannel(config_setting_t* channelConf) {
 
 /**
  * @brief Adds a new channel to the list of known channels and returns it's id
- * @details If the function is unable to obtain memory -1 is returned.
+ * @details If the function is unable to obtain memory, -1 is returned.
  * @param appIndex The index of the previously loaded app module within it's
  * vector
  * @param address The channel's address configuration
@@ -374,9 +374,9 @@ static int pfm_loadAppModule(const char* name) {
  * function. If the function is unable to obtain one or more interface functions
  * it will return NULL and log an appropriate error message. It assumes that the
  * given app reference is valid and that the handler as well as the name
- * contained is properly set. The function won't perform a rollback operation
+ * contained is properly set. The function won't perform a roll-back operation
  * taking the invalid application layer from the appVector.
- * @param app The reference to the app structure to manipulate
+ * @param app The reference to the application structure to manipulate
  * @return The init function or null.
  */
 static inline fieldbus_application_init_t pfm_lookupAppInterfaceFunctions(

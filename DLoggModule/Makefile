@@ -25,13 +25,13 @@
 # The compiler command
 #CC = gcc
 CC=arm-linux-gnueabihf-gcc
-# The compiler flags
+# @brief The compiler flags
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -fPIC 
 CFLAGS += -DENDEBUG 
 CFLAGS += -fpack-struct
-
+# @brief The linker flags
 LDFLAGS += -shared
 LDFLAGS += $(LIB:%=-l%)
 LDFLAGS += -L../CSVLogger/lib-arm
@@ -64,6 +64,10 @@ INCLUDEDIR = ../CSVLogger/includes
 # @brief The name of the documentation directory
 DOCDIR = doc
 
+# @brief The name of the doxygen configuration file used to generate the 
+# documentation
+DOXY_CFG = doxygen-def.cfg
+
 # @ brief The librarie's object files 
 OBJ_MAC = $(CFILES_MAC:%.c=$(BINDIR)/%.o)
 # @ brief The librarie's object files 
@@ -90,7 +94,10 @@ ifeq (,findstring($(MAKECMDGOALS),$(NOINCLUDEDEPS)))
 endif
 
 # @brief Rule to create and compile everything
-all: $(PRGNAME_MAC) $(PRGNAME_STDVAL)
+all: binary docu
+
+# @brief compiles every binary program file and library
+binary: $(PRGNAME_MAC) $(PRGNAME_STDVAL)
 
 # @brief Rule to create the MAC library
 # @details The LDFLAGS parameter must be passed at the end of arguments list to 
@@ -105,7 +112,6 @@ $(PRGNAME_MAC): $(OBJ_MAC)
 # functions arn't loaded. (gcc parses the arguments in order.)
 $(PRGNAME_STDVAL): $(OBJ_STDVAL)
 	$(CC) $(OBJ_STDVAL) -o $@ $(LDFLAGS)
-
 
 # @brief Rule to compile the modules 
 # @details The binary directory won't be updated iff the timestamp changes
@@ -122,8 +128,8 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 # @brief Rule to automatically generate the documentation
-docu: $(DOCDIR) $(SRCDIR)
-	doxygen
+docu: $(DOCDIR) $(SRCDIR) $(DOXY_CFG)
+	doxygen $(DOXY_CFG)
 
 # @brief Rule to generate the directory containing the documentation files 
 $(DOCDIR):
@@ -135,5 +141,5 @@ clean:
 	rm -rf $(DOCDIR)
 	rm -f $(PRGNAME_MAC) $(PRGNAME_STDVAL)
 
-.PHONY: all clean docu
+.PHONY: all clean docu binary
 	

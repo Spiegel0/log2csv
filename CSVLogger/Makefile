@@ -26,38 +26,43 @@
 #CC = gcc
 CC=arm-linux-gnueabihf-gcc
 
-# The compiler flags
+# @brief The compiler flags
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -DENDEBUG 
 CFLAGS += -fpack-struct
 
+# @brief The linker flags
 LDFLAGS += $(LIB:%=-l%)
 LDFLAGS += -Llib-arm
-#Used to access main module functions from outside
+# Used by external modules to access main module functions
 LDFLAGS += -Wl,-export-dynamic
 
 # @brief The list of source files neccessary to build the program. 
 # It has to be updated manually
 CFILES = main.c logging-adapter.c pluggable-fieldbus-manager.c
 
-# @brief The list of external libraries 
+# @brief The list of external libraries used 
 LIB = config dl
 
 # @brief The name of the program to build
 PRGNAME = log2csv
 
-# @brief The name of the binary folder to store some .o and .d files in
+# @brief The name of the binary folder storing some .o and .d files
 BINDIR = bin
 
 # @brief The name of the source folder containing the program's .c and .h files
 SRCDIR = src
 
-# @brief The name of the include directory
+# @brief The name of the include directory exposed
 INCLUDEDIR = includes
 
 # @brief The name of the documentation directory
 DOCDIR = doc
+
+# @brief The name of the doxygen configuration file used to generate the 
+# documentation
+DOXY_CFG = doxygen-def.cfg
 
 # @ brief The program's object files 
 OBJ = $(CFILES:%.c=$(BINDIR)/%.o)
@@ -81,7 +86,10 @@ ifeq (,findstring($(MAKECMDGOALS),$(NOINCLUDEDEPS)))
 endif
 
 # @brief Rule to create and compile everything
-all: $(PRGNAME)
+all: binary docu
+
+# @brief compiles every binary program file and library
+binary: $(PRGNAME)
 
 # @brief Rule to create the program
 # @details The LDFLAGS parameter must be passed at the end of arguments list to 
@@ -105,8 +113,8 @@ $(BINDIR):
 	mkdir -p $(BINDIR)
 
 # @brief Rule to automatically generate the documentation
-docu: $(DOCDIR) $(SRCDIR)
-	doxygen
+docu: $(DOCDIR) $(SRCDIR) $(DOXY_CFG)
+	doxygen $(DOXY_CFG)
 
 # @brief Rule to generate the directory containing the documentation files 
 $(DOCDIR):
@@ -118,5 +126,5 @@ clean:
 	rm -rf $(DOCDIR)
 	rm -f $(PRGNAME)
 
-.PHONY: all clean docu
+.PHONY: all clean docu binary
 	

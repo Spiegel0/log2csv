@@ -34,8 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-/** @brief The maximum number of current data samples per message */
+/** @brief The maximum number of data samples per active-data message */
 #define DLOGG_CD_MAX_SAMPLES_PER_MSG (2)
+
 /**
  * @brief Encapsulates the data fetched from one data line.
  * @details It is planned to support multiple logging lines each communicating
@@ -73,7 +74,7 @@ static inline int dlogg_cd_getSampleType(uint8_t deviceID,
 static size_t dlogg_cd_getSampleSize(uint8_t sampleID);
 
 /**
- * @brief Fetches the meta-data and all available device samples
+ * @brief Fetches the meta-data and all available active-data samples
  * @return The status of the operation
  */
 common_type_error_t fieldbus_mac_sync() {
@@ -91,9 +92,9 @@ common_type_error_t fieldbus_mac_sync() {
 }
 
 /**
- * @brief Fetches to currently set value and stores them into the global buffer
+ * @brief Fetches active data values and stores them into the global buffer
  * @details The function assumes that the line's meta-data were previously set.
- * The sampleCOunt field will be updated according the read data.
+ * The sampleCount field will be updated according to the read data.
  * @param activeLine The line id, currently active
  * @return The status of the operation
  */

@@ -1,6 +1,10 @@
 /**
  * @file logging-adapter.h
  * @brief Defines a basic library independent logging interface.
+ * @details The logging_adapter module provides a unique and simple to use
+ * interface to log status information. Every message should not be terminated
+ * by a newline character. Any newline formatting will be inserted by the
+ * logging back-end used, if necessary.
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
@@ -39,30 +43,30 @@
 int logging_adapter_init(const char* progname);
 
 /**
- * @brief Reports the printf - styled error message.
+ * @brief Reports the printf-styled error message.
  * @param formatString The string to report.
  */
 void logging_adapter_error(const char* formatString, ...);
 
 /**
- * @brief Reports the printf - styled error message.
+ * @brief Reports the printf-styled error message.
  * @details Additionally it checks the errno variable and reports any additional
- * information contained.
+ * information referenced by errno.
  * @param err The error number taken from errno.h or zero if no additional
  * information is given.
  * @param formatString The string to report.
- * @param vaArg The list of arguments
+ * @param varArg The list of arguments
  */
 void logging_adapter_errorNo(int err, const char* formatString, va_list varArg);
 
 /**
- * @brief Reports the printf - styled informational message.
+ * @brief Reports the printf-styled informational message.
  * @param formatString The string to report.
  */
 void logging_adapter_info(const char* formatString, ...);
 
 /**
- * @brief Reports the printf - styled debugging message.
+ * @brief Reports the printf-styled debugging message.
  * @param formatString The string to report.
  */
 void logging_adapter_debug(const char* formatString, ...);
@@ -70,7 +74,7 @@ void logging_adapter_debug(const char* formatString, ...);
 /**
  * @brief Frees allocated resources.
  * @details After calling this function only logging_adapter_init() may be
- * called again. Caling this function without initializing the module will be
+ * called again. Calling this function without initializing the module will be
  * tolerated without producing any error.
  */
 void logging_adapter_freeResources(void);

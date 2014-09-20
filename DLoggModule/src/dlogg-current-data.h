@@ -38,9 +38,9 @@
 /** @brief D-LOGG and BL232 2DL module type code */
 #define DLOGG_CD_MOD_TYPE_DLOGG_2D (0xD1)
 
-/** @brief One data line mode code */
+/** @brief One data line - mode code */
 #define DLOGG_CD_MODE_1DL (0xA8)
-/** @brief Two data lines mode code */
+/** @brief Two data lines - mode code */
 #define DLOGG_CD_MODE_2DL (0xD1)
 /** @brief CAN logging mode code */
 #define DLOGG_CD_MODE_CAN (0xDC)
@@ -76,7 +76,7 @@ typedef struct {
 	/** @brief The read mode of operation */
 	uint8_t mode;
 	/**
-	 * @brief number of currently available (samples)
+	 * @brief number of currently available active-data samples
 	 * @details The function will be calculated based on the other meta-data
 	 * values and set after the corresponding samples are read
 	 */

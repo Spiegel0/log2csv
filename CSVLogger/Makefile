@@ -22,9 +22,19 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# Tool prefix used for cross-compiling. 
+# Leave it blank to use default toolchain.
+CROSS_COMPILE = 
+# CROSS_COMPILE = arm-linux-gnueabihf-
+
 # The compiler command
-#CC = gcc
-CC=arm-linux-gnueabihf-gcc
+CC=$(CROSS_COMPILE)gcc
+
+# @brief Directory containing needed library files
+# @details The directory will not be distributed. Either use your packet manager
+# to install them or change the path to an appropriate directory
+LIB_DIR =
+# LIB_DIR += lib-arm
 
 # @brief The compiler flags
 CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
@@ -34,7 +44,7 @@ CFLAGS += -fpack-struct
 
 # @brief The linker flags
 LDFLAGS += $(LIB:%=-l%)
-LDFLAGS += -Llib-arm
+LDFLAGS += $(LIB_DIR:%=-L%)
 # Used by external modules to access main module functions
 LDFLAGS += -Wl,-export-dynamic
 

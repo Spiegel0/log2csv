@@ -1,0 +1,85 @@
+log2csv
+=======
+(Version 0.1, 20.09.2014)
+
+Log2csv is a very small and basic framework logging Heating Ventilation and Air
+Conditioning (HVAC)-related data into a CSV file. It consists of a main 
+application, log2csv and sub modules connecting data sources like HVAC 
+controllers or sensor equipment installed.
+Currently only a connector accessing UVR 61-3 devices manufactured by 
+Technische Alternative Elektronische Steuerungsgerätegesellschaft m.b.H(TA) 
+(www.ta.co.at) is provided. The framework application is located at the 
+CSVLogger directory. It reads the provided configuration, loads given modules,
+initiates loading the data and stores the results into a CSV file.
+
+The program was initially written to read data from some temperature sensors
+using a self-made "field-bus" not ready to be published yet. It was then 
+extended to read parameters provided by the UVR 61-3 controller using a D-LOGG
+data logging device connected via USB and is still on an early stage of 
+development. The framework is limited to real-time like data and doesn't 
+provide any means of reading historical data. If you just want to access data 
+from devices manufactured by Technische Alternative using Linux, give d-logg-
+linux (http://d-logg-linux.roemix.de/) a try first! If you need some source of 
+inspiration concerning the implementation of TA's protocol or if your device is
+ not supported by d-logg-linux please feel free to browse the source code and 
+try to install the program. If you find any bugs or if you're willing to test 
+any new features I will be glad if you open a ticket or contact me via e-mail.
+
+Thanks to the helping hand of TA's support team it was possible to develop the
+D-LOGG module using their original specification! If you need the protocol 
+specification, please contact the TA support team too. The project repository
+won't contain any specification of TA's protocols. 
+ 
+== Features ==
+
+* Create CSV files and write a headline
+* Log to CSV files
+* Reading custom configurations
+* Synchronization mechanism between different field-bus modules
+* Configuration of individual data channels and channel headers
+* Flexible design allowing to include further modules
+* Individual time-stamp format
+* String, double and integer values supported
+
+Devices:
+* Up to two DL-Bus devices
+* UVR 61-3 controller
+* D-LOGG USB data logger, version 2.9 or higher
+
+Platform:
+* Linux (Tested with Kernel 3.8 only)
+* ARM-Architecture (Tested with BeagleBoard Black)
+
+== Installation ==
+
+The logging framework and each module suite has to be compiled separately using
+the makefile provided. On cross-compiling the CROSS_COMPILE variable as well as
+the LIB_DIR variable might be set accordingly. The application requires 
+libconfig to be installed properly.
+
+Any installation currently has to be undertaken manually. The program assumes 
+that the configuration file is located at /etc/log2csv.cnf but an alternating 
+path might be passed using the -c switch. The configuration file has to 
+reference the module *.so files properly. See CSVLogger/etc/log2csv.cnf for a 
+documented configuration example.
+
+== License and Warranty ==
+
+log2csv
+
+Copyright (C) 2014 Michael Spiegel
+E-Mail: michael.h.spiegel@gmail.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+

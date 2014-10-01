@@ -28,8 +28,11 @@ any new features I will be glad if you open a ticket or contact me via e-mail.
 Thanks to the helping hand of TA's support team it was possible to develop the
 D-LOGG module using their original specification! If you need the protocol 
 specification, please contact the TA support team too. The project repository
-won't contain any specification of TA's protocols. 
- 
+won't contain any specification of TA's protocols. I also thank Dipl.-Ing. 
+Guenther Gridling from the Institute of Computer Aided Automation, Vienna 
+Technical University who enabled writing the first version of the software in 
+the context of the curriculum technical informatics.
+
 == Features ==
 
 * Create CSV files and write a headline

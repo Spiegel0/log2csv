@@ -1,6 +1,11 @@
 /**
  * @file dlogg-mac.c
- * @brief The file contains the d-logg mac layer implementation
+ * @brief The file contains the d-logg MAC layer implementation
+ * @details It uses the termios API to access the USB UART device present in
+ * D-LOGG. Some functions specified by dlogg-mac.h which don't directly use any
+ * hardware connections are out-sourced to dlogg-mac-common.c. Placing these
+ * functions in a different file enhances re-usability of the code, if another
+ * hardware access API is used.
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
@@ -31,6 +36,7 @@
 #include <string.h>
 #include <termios.h>
 #include "dlogg-mac.h"
+#include "dlogg-mac-common.h"
 
 /* Configuration directives */
 #define DLOGG_MAC_CONFIG_INTERFACE "interface"
@@ -54,8 +60,6 @@ static struct {
 
 /* Function Prototypes */
 static inline common_type_error_t dlogg_mac_initTTY(const char* interface);
-static void dlogg_mac_updateChksum(uint8_t * buffer, size_t length,
-		dlogg_mac_chksum_t* chksum);
 
 common_type_error_t fieldbus_mac_init(config_setting_t* configuration) {
 	const char* interface;
@@ -162,10 +166,6 @@ common_type_error_t dlogg_mac_send(uint8_t *buffer, size_t length,
 	return COMMON_TYPE_SUCCESS;
 }
 
-common_type_error_t dlogg_mac_send_chksum(dlogg_mac_chksum_t * chksum) {
-	return dlogg_mac_send((uint8_t *) chksum, sizeof(*chksum), NULL );
-}
-
 common_type_error_t dlogg_mac_read(uint8_t *buffer, size_t length,
 		dlogg_mac_chksum_t * chksum) {
 	size_t remaining = length;
@@ -191,45 +191,6 @@ common_type_error_t dlogg_mac_read(uint8_t *buffer, size_t length,
 	dlogg_mac_updateChksum(buffer, length, chksum);
 
 	return COMMON_TYPE_SUCCESS;
-}
-
-common_type_error_t dlogg_mac_read_chksum(dlogg_mac_chksum_t * chksum) {
-	common_type_error_t err;
-	dlogg_mac_chksum_t chksumRead;
-	assert(chksum != NULL);
-	err = dlogg_mac_read((uint8_t *) &chksumRead, sizeof(chksumRead), NULL );
-	if (err != COMMON_TYPE_SUCCESS) {
-		return err;
-	}
-
-	if (*chksum != chksumRead) {
-		logging_adapter_info("Received invalid checksum %u, %u expected.",
-				(unsigned int) chksumRead, (unsigned int) *chksum);
-		return COMMON_TYPE_ERR_INVALID_RESPONSE;
-	}
-	return COMMON_TYPE_SUCCESS;
-}
-
-/**
- * @brief Updates the checksum value, if any
- * @details The result will be written to the given checksum location. The
- * checksum is defined as the sum of the sent/received bytes mod 256. The
- * chksum field will contain the partial sum of the buffer mod 256.
- * @param buffer The valid buffer to check
- * @param length The number of elements to check
- * @param chksum A valid pointer to a checksum location or null, if no checksum
- * is to be calculated
- */
-static void dlogg_mac_updateChksum(uint8_t * buffer, size_t length,
-		dlogg_mac_chksum_t * chksum) {
-	int i;
-	assert(buffer != NULL || chksum == NULL);
-
-	if (chksum != NULL ) {
-		for (i = 0; i < length; i++) {
-			*chksum = (*chksum + buffer[i]) & 0xFF;
-		}
-	}
 }
 
 common_type_error_t fieldbus_mac_free() {

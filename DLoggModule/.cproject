@@ -24,6 +24,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.base.1233488917" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.base">
 								<option id="gnu.c.compiler.option.include.paths.495638340" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CSVLogger/includes}&quot;"/>
+									<listOptionValue builtIn="false" value="/usr/include/libftdi1/ftdi.h"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.146196166" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

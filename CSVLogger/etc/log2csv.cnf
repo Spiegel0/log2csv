@@ -50,8 +50,17 @@ timeHeader="Time stamp";
 mac=(
 	{
 		name="../DLoggModule/dlogg.so";
-		# The virtual tty interface, the D-LOGG device is connected to
+		# The virtual TTY interface, the D-LOGG device is connected to.
+		# The parameter only takes action if the MAC module was compiled to use the
+		# termios-based interface (Requires fewer external libraries)
 		interface="/dev/ttyUSB0";
+		# The USB device number of the FTDI device to use. The order of USB devices 
+		# is determined internally. Sorry, if you have multiple FTDI USB adapter 
+		# installed, you simply have to try to guess the correct number. If the 
+		# parameter is not specified, the first fitting device will be taken.
+		# The parameter is ignored if the MAC layer wasn't compiled to use the FTDI 
+		# library. 
+		device-nr=1
 	}
 	
 );

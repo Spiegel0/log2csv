@@ -27,6 +27,10 @@
 CROSS_COMPILE = 
 # CROSS_COMPILE = arm-linux-gnueabihf-
 
+# If this variable is set to true, the libftdi backend will be used instead of 
+# using the termios API.   
+USE_LIBFTDI = "true"
+
 # The compiler command
 CC=$(CROSS_COMPILE)gcc
 
@@ -37,7 +41,7 @@ LIB_DIR =
 # LIB_DIR += ../CSVLogger/lib-arm
 
 # @brief The compiler flags
-CFLAGS = -std=c99 -pedantic -Wall -I $(INCLUDEDIR)
+CFLAGS = -std=c99 -pedantic -Wall $(INCLUDEDIR:%=-I %)
 CFLAGS += -D_XOPEN_SOURCE=500 -D_BSD_SOURCE
 CFLAGS += -fPIC 
 CFLAGS += -DENDEBUG 
@@ -49,13 +53,22 @@ LDFLAGS += $(LIB_DIR:%=-L%)
 
 # @brief The list of source files neccessary to build the MAC library. 
 # It has to be updated manually
-CFILES_MAC = dlogg-mac.c dlogg-current-data.c
+CFILES_MAC = dlogg-current-data.c dlogg-mac-common.c
+ifeq ($(USE_LIBFTDI),"true")
+  CFILES_MAC += dlogg-mac-ftdi.c
+else
+  CFILES_MAC += dlogg-mac.c
+endif
+
 # @brief The list of source files neccessary to build the Temperature access
 # library. It has to be updated manually
 CFILES_STDVAL = dlogg-stdval.c
 
 # @brief The list of external libraries 
 LIB = config
+ifeq ($(USE_LIBFTDI),"true")
+  LIB += ftdi1
+endif
 
 # @brief The name of the MAC library to build
 PRGNAME_MAC=dlogg.so
@@ -71,6 +84,10 @@ SRCDIR = src
 
 # @brief The name of the include directory
 INCLUDEDIR = ../CSVLogger/includes
+ifeq ($(USE_LIBFTDI),"true")
+	# following the libftdi default installation described in README.build
+  INCLUDEDIR += /usr/include/libftdi1/
+endif
 
 # @brief The name of the documentation directory
 DOCDIR = doc

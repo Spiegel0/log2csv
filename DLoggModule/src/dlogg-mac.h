@@ -1,6 +1,6 @@
 /**
  * @file dlogg-mac.h
- * @brief Defines the D-LOGG mac interface used to access raw data
+ * @brief Defines the D-LOGG MAC interface used to access raw data
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *

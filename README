@@ -1,6 +1,6 @@
 log2csv
 =======
-(Version 0.1, 20.09.2014)
+(Version 0.1, 09.10.2014)
 
 Log2csv is a very small and basic framework logging Heating Ventilation and Air
 Conditioning (HVAC)-related data into a CSV file. It consists of a main 
@@ -33,6 +33,13 @@ Guenther Gridling from the Institute of Computer Aided Automation, Vienna
 Technical University who enabled writing the first version of the software in 
 the context of the curriculum technical informatics.
 
+Because the Linux kernel module implementation of the USB UART adapter (FT232R)
+used to connect the D-LOGG device seems buggy on ARM Linux platforms (tested 
+with kernel 3.8.13) a userspace library-based version was added. The 
+alternative version requires more libraries to be installed but do not relies 
+on the module implementation shipped with the kernel.
+
+
 == Features ==
 
 * Create CSV files and write a headline
@@ -50,21 +57,77 @@ Devices:
 * D-LOGG USB data logger, version 2.9 or higher
 
 Platform:
-* Linux (Tested with Kernel 3.8 only)
-* ARM-Architecture (Tested with BeagleBoard Black)
+* Linux (Tested with Kernel 3.8 only) on
+* ARM-Architecture (Tested with BeagleBone Black)
 
 == Installation ==
 
 The logging framework and each module suite has to be compiled separately using
 the makefile provided. On cross-compiling the CROSS_COMPILE variable as well as
-the LIB_DIR variable might be set accordingly. The application requires 
-libconfig to be installed properly.
+the LIB_DIR variable might be set accordingly. The application requires at 
+least libconfig to be installed properly. If the USE_LIBFTDI variable located 
+in DLoggModule/Makefile is set to "true" another back-end will be used to 
+access the D-LOGG device. The alternative backend additionally requires 
+libusb 1.0 and libftdi 1.1.
 
 Any installation currently has to be undertaken manually. The program assumes 
 that the configuration file is located at /etc/log2csv.cnf but an alternating 
 path might be passed using the -c switch. The configuration file has to 
 reference the module *.so files properly. See CSVLogger/etc/log2csv.cnf for a 
 documented configuration example.
+
+
+=== Example Build Process ===
+
+The following example build process was executed on a BeagleBone Black running 
+Debian 7.6 (wheezy). It includes installing necessary programs and libraries as
+well as compiling log2csv. Unfortunately the libftdi-dev package is currently 
+not available in version 1.1 and the version available doesn't feature the used
+device. Hence the current libftdi version has to be installed manually as well. 
+
+First programs available via the package manager are installed. libusb and 
+cmake are used to build libftdi and libconfig is required to build log2csv. 
+Pleas note that the libraries have to include the header files (*-dev) to build
+the programs:
+
+$ sudo apt-get install libusb-1.0-0-dev cmake libconfig-dev
+
+After installing the prerequisites, the libftdi can be cloned, built and 
+installed:
+
+$ git clone git://developer.intra2net.com/libftdi libftdi
+$ mkdir libftdi/build
+$ cd libftdi/build/
+$ cmake  -DCMAKE_INSTALL_PREFIX="/usr" ../
+$ make
+$ sudo make install
+$ cd ../..
+
+If everything runs without errors, libftdi should now be installed. Lets try to
+clone the log2csv repository and compile the application. Unfortunately the 
+build process currently isn't really well developed so every module needed has 
+to compiled on it's own:
+
+$ git clone git@github.com:Spiegel0/log2csv.git log2csv
+$ cd log2csv/DLoggModule/
+$ make binary
+
+$ cd ../CSVLogger/
+$ make binary
+
+Now every available module should be built successfully. The default make 
+target "all" is also available but requires doxygen to create the source-code 
+documentation. If you do not have doxygen installed, call the "binary" make 
+target instead of "all".
+You may now want to edit the program's configuration file 
+CSVLogger/etc/log2csv.cnf with your favorite text editor and try log2csv:
+
+$ vim etc/log2csv.cnf
+$ ./log2csv -c etc/log2csv.cnf
+
+If something does not work as expected, please open a ticket on git hub. Note 
+that the program is still in a very early beta stage and may not behave as 
+expected.
 
 == License and Warranty ==
 

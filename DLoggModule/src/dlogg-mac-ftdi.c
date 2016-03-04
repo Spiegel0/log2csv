@@ -58,13 +58,13 @@ static struct {
 } dlogg_mac_cData;
 
 /* Function prototypes */
-static inline common_type_error_t dlogg_mac_initUART(long int ttyID);
-static inline common_type_error_t dlogg_mac_openUSBDevice(long int ttyID);
+static inline common_type_error_t dlogg_mac_initUART(int ttyID);
+static inline common_type_error_t dlogg_mac_openUSBDevice(int ttyID);
 static inline common_type_error_t dlogg_mac_setUARTParams(void);
 
 common_type_error_t fieldbus_mac_init(config_setting_t* configuration) {
 	common_type_error_t err;
-	long devNr = -1;
+	int devNr = -1;
 
 	assert(configuration != NULL);
 
@@ -94,7 +94,7 @@ common_type_error_t fieldbus_mac_init(config_setting_t* configuration) {
  * @param ttyID The number of the device to use or -1 if no device number is set
  * @return The status of the operation
  */
-static inline common_type_error_t dlogg_mac_initUART(long int ttyID) {
+static inline common_type_error_t dlogg_mac_initUART(int ttyID) {
 	common_type_error_t err;
 	struct ftdi_version_info ftdiVersion;
 
@@ -128,7 +128,7 @@ static inline common_type_error_t dlogg_mac_initUART(long int ttyID) {
  * @param ttyID The device id
  * @return The status of the operation
  */
-static inline common_type_error_t dlogg_mac_openUSBDevice(long int ttyID) {
+static inline common_type_error_t dlogg_mac_openUSBDevice(int ttyID) {
 	struct ftdi_device_list * devList = NULL;
 	struct ftdi_device_list * tmpDevEntry;
 	int retCode, i;

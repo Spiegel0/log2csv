@@ -616,7 +616,7 @@ static inline common_type_error_t dlogg_stdval_checkAddress(
 static inline common_type_error_t dlogg_stdval_parseAddress(
 		dlogg_stdval_addr_t * addr, config_setting_t *addressConfig) {
 	common_type_error_t err;
-	long int lineID = 0, channel, controller = 1;
+	int lineID = 0, channel, controller = 1;
 	const char * prefix;
 
 	assert(addressConfig != NULL);
@@ -627,7 +627,7 @@ static inline common_type_error_t dlogg_stdval_parseAddress(
 		return COMMON_TYPE_ERR_CONFIG;
 	}
 
-// Use default value, if not set
+	// Use default value, if not set
 	config_setting_lookup_int(addressConfig, DLOGG_STDVAL_CONFIG_LINE, &lineID);
 
 	if (lineID < 0 || lineID > 255) {
@@ -649,7 +649,7 @@ static inline common_type_error_t dlogg_stdval_parseAddress(
 		return COMMON_TYPE_ERR_CONFIG;
 	}
 
-// Use default value, if not set
+	// Use default value, if not set
 	config_setting_lookup_int(addressConfig, DLOGG_STDVAL_CONFIG_CONTROLLER,
 			&controller);
 

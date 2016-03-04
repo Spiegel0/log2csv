@@ -1,12 +1,12 @@
 /**
  * @file dlogg-mac-common.c
  * @brief The file implements common D-LOGG MAC layer functions
- * @details It provides not only some helper functions but also implements
+ * @details It does not only provide some helper functions but also implements
  * dlogg-mac.h functions which do not access the hardware directly.
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
- * Copyright (C) 2014 Michael Spiegel
+ * Copyright (C) 2016 Michael Spiegel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

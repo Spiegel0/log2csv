@@ -1,6 +1,6 @@
 /**
  * @file dlogg-mac-common.h
- * @brief The header file specifies common MAC function used by the termios
+ * @brief The header file specifies common MAC functions used by the termios
  * based implementation as well as the libftdi based one.
  * @details The definitions of this module arn't meant to be used outside the
  * MAC layer.

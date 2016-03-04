@@ -6,7 +6,7 @@
 #
 # @author Michael Spiegel, michael.h.spiegel@gmail.com
 #
-# Copyright (C) 2014 Michael Spiegel
+# Copyright (C) 2016 Michael Spiegel
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ CROSS_COMPILE =
 # CROSS_COMPILE = arm-linux-gnueabihf-
 
 # If this variable is set to true, the libftdi backend will be used instead of 
-# using the termios API.   
+# the termios API.   
 USE_LIBFTDI = "true"
 
 # The compiler command
@@ -51,7 +51,7 @@ LDFLAGS += -shared
 LDFLAGS += $(LIB:%=-l%)
 LDFLAGS += $(LIB_DIR:%=-L%)
 
-# @brief The list of source files neccessary to build the MAC library. 
+# @brief The list of source files necessary to build the MAC library. 
 # It has to be updated manually
 CFILES_MAC = dlogg-current-data.c dlogg-mac-common.c
 ifeq ($(USE_LIBFTDI),"true")
@@ -60,7 +60,7 @@ else
   CFILES_MAC += dlogg-mac.c
 endif
 
-# @brief The list of source files neccessary to build the Temperature access
+# @brief The list of source files necessary to build the Temperature access
 # library. It has to be updated manually
 CFILES_STDVAL = dlogg-stdval.c
 

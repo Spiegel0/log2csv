@@ -4,7 +4,7 @@
  * @details <p>The MAC uses the same interfaces as the standard MAC which
  * utilizes the termios interface. The FTDI MAC doesn't implement a different
  * name prefix because it doesn't make much sense using both MAC modules in
- * parallel. The FTDI MAC layer access the first fitting USB device or, if a
+ * parallel. The FTDI MAC layer access the first suitable USB device or, if a
  * device number is given, it opens that device.</p>
  * <p>To use the alternative MAC the kernel module ftdi_sio may need to be
  * unloaded and the libraries libftdi1.1 and libusb1.0 need to be available.
@@ -12,7 +12,7 @@
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
- * Copyright (C) 2014 Michael Spiegel
+ * Copyright (C) 2016 Michael Spiegel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -123,7 +123,7 @@ static inline common_type_error_t dlogg_mac_initUART(int ttyID) {
  * @brief Opens the given USB UART device.
  * @details Lists available devices and chooses the device corresponding to the
  * ttyID. if ttyID < 0, the device number is treated as unset and the first
- * fitting device will be selected. The first device has the identifier zero.
+ * suitable device will be selected. The first device has the identifier zero.
  * The function assumes that the ftdi context was properly initialized.
  * @param ttyID The device id
  * @return The status of the operation

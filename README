@@ -1,6 +1,6 @@
 log2csv
 =======
-(Version 0.1, 09.10.2014)
+(Version 0.1, 04.03.2016)
 
 Log2csv is a very small and basic framework logging Heating Ventilation and Air
 Conditioning (HVAC)-related data into a CSV file. It consists of a main 
@@ -31,16 +31,9 @@ specification, please contact the TA support team too. The project repository
 won't contain any specification of TA's protocols. I also thank Dipl.-Ing. 
 Guenther Gridling from the Institute of Computer Aided Automation, Vienna 
 Technical University who enabled writing the first version of the software in 
-the context of the curriculum technical informatics.
+the context of the curriculum "Technische Informatik" (computer engineering).
 
-Because the Linux kernel module implementation of the USB UART adapter (FT232R)
-used to connect the D-LOGG device seems buggy on ARM Linux platforms (tested 
-with kernel 3.8.13) a userspace library-based version was added. The 
-alternative version requires more libraries to be installed but do not relies 
-on the module implementation shipped with the kernel.
-
-
-== Features ==
+# Features
 
 * Create CSV files and write a headline
 * Log to CSV files
@@ -60,7 +53,7 @@ Platform:
 * Linux (Tested with Kernel 3.8 only) on
 * ARM-Architecture (Tested with BeagleBone Black)
 
-== Installation ==
+# Installation
 
 The logging framework and each module suite has to be compiled separately using
 the makefile provided. On cross-compiling the CROSS_COMPILE variable as well as
@@ -76,8 +69,7 @@ path might be passed using the -c switch. The configuration file has to
 reference the module *.so files properly. See CSVLogger/etc/log2csv.cnf for a 
 documented configuration example.
 
-
-=== Example Build Process ===
+## Example Build Process
 
 The following example build process was executed on a BeagleBone Black running 
 Debian 7.6 (wheezy). It includes installing necessary programs and libraries as
@@ -85,7 +77,7 @@ well as compiling log2csv. Unfortunately the libftdi-dev package is currently
 not available in version 1.1 and the version available doesn't feature the used
 device. Hence the current libftdi version has to be installed manually as well. 
 
-First programs available via the package manager are installed. libusb and 
+First, programs available via the package manager are installed. libusb and 
 cmake are used to build libftdi and libconfig is required to build log2csv. 
 Pleas note that the libraries have to include the header files (*-dev) to build
 the programs:
@@ -129,11 +121,24 @@ If something does not work as expected, please open a ticket on git hub. Note
 that the program is still in a very early beta stage and may not behave as 
 expected.
 
-== License and Warranty ==
+# Limitations
+
+Since the Linux kernel module implementation of the USB UART adapter (FT232R)
+used to connect the D-LOGG device seems buggy on ARM Linux platforms (tested 
+with kernel 3.8.13 on a BeagleBone Black) a userspace library-based version was 
+added. The alternative version requires more libraries to be installed but does 
+not rely on the module implementation shipped with the kernel. The alternative 
+UART API can be enabled in the Makefile of the DLogg module. Unfortunately, also
+the alternative implementation seems to crash eventually but less frequently. A 
+quick fix is to reset the usb device by first writing "-1" to 
+/sys/bus/usb/devices/usb1/bConfigurationValue . After approximately one second,
+the device can be enabled again by writing "1" to the same file.
+
+# License and Warranty
 
 log2csv
 
-Copyright (C) 2014 Michael Spiegel
+Copyright (C) 2016 Michael Spiegel
 E-Mail: michael.h.spiegel@gmail.com
 
 This program is free software; you can redistribute it and/or modify

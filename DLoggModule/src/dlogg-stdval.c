@@ -10,7 +10,7 @@
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
- * Copyright (C) 2014 Michael Spiegel
+ * Copyright (C) 2016 Michael Spiegel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -500,18 +500,27 @@ static common_type_t dlogg_stdval_outputDrive2common(
 
 /**
  * @brief Translates the input type into a properly scaled common type
- * @details Temperatures will be scaled in degree Celsius, volume flow to l/h,
- * radiation to W/m^2 and boolean values to [0,1]. If the input is not set the
- * function will return an error.
+ * @details <p> Temperatures will be scaled in degree Celsius, volume flow to
+ * l/h, radiation to W/m^2 and boolean values to [0,1]. If the input is not set
+ * the function will return an error.</p>
+ * <p>It seems that negative values are either encoded using ones or twos
+ * complement. Since a value of 0xFFFF directly follows 0x0000 on temperature
+ * readings twos complement encoding is assumed.</p>
  * @param input The input to translate
  * @return The proper common type
  */
 static common_type_t dlogg_stdval_input2common(dlogg_cd_input_t input) {
 	common_type_t ret;
+	int16_t signedValue; // The signed interpretation of the received value
+
+	// convert the data to the commonly used signed interpretation
+	signedValue = ((input.val.sign?0xF000:0x0000) |
+			(input.val.highValue << 8) | input.val.lowValue);
 
 	logging_adapter_debug("Got input value: type=%u, high=0x%02x, low=0x%02x, "
-			"sign=%u", (unsigned) input.val.type, (unsigned) input.val.highValue,
-			(unsigned) input.val.lowValue, (unsigned) input.val.sign);
+			"sign=%u, sigValue=%d", (unsigned) input.val.type,
+			(unsigned) input.val.highValue, (unsigned) input.val.lowValue,
+			(unsigned) input.val.sign, (int) signedValue);
 
 	switch (input.val.type) {
 	case 0: // unused
@@ -525,27 +534,19 @@ static common_type_t dlogg_stdval_input2common(dlogg_cd_input_t input) {
 		break;
 	case 2: // temperature
 		ret.type = COMMON_TYPE_DOUBLE;
-		ret.data.doubleVal = (((uint16_t) input.val.lowValue)
-				+ (((uint16_t) input.val.highValue) << 8)) * 0.1;
-		ret.data.doubleVal *= input.val.sign ? -1.0 : 1.0;
+		ret.data.doubleVal = signedValue * 0.1;
 		break;
 	case 3: // volume flow
 		ret.type = COMMON_TYPE_DOUBLE;
-		ret.data.doubleVal = (((uint16_t) input.val.lowValue)
-				+ (((uint16_t) input.val.highValue) << 8)) * 4.0;
-		ret.data.doubleVal *= input.val.sign ? -1.0 : 1.0;
+		ret.data.doubleVal = signedValue * 4.0;
 		break;
 	case 6: // solar radiation
 		ret.type = COMMON_TYPE_DOUBLE;
-		ret.data.doubleVal = (((uint16_t) input.val.lowValue)
-				+ (((uint16_t) input.val.highValue) << 8));
-		ret.data.doubleVal *= input.val.sign ? -1.0 : 1.0;
+		ret.data.doubleVal = signedValue;
 		break;
 	case 7: // room temperature
 		ret.type = COMMON_TYPE_DOUBLE;
-		ret.data.doubleVal = (((uint16_t) input.val.lowValue)
-				+ (((uint16_t) input.val.highValue & 0x01) << 8)) * 0.1;
-		ret.data.doubleVal *= input.val.sign ? -1.0 : 1.0;
+		ret.data.doubleVal = signedValue * 0.1;
 		break;
 	default:
 		logging_adapter_info("Invalid input type identifier read: 0x%20x",

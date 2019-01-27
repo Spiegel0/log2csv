@@ -55,8 +55,8 @@ Platform:
 # Installation
 
 The logging framework and each module suite has to be compiled separately using
-the makefile provided. On cross-compiling the CROSS_COMPILE variable as well as
-the LIB_DIR variable might be set accordingly. The application requires at 
+the makefile provided. On cross-compiling the `CROSS_COMPILE` variable as well 
+as the `LIB_DIR` variable might be set accordingly. The application requires at 
 least libconfig to be installed properly. If the `USE_LIBFTDI` variable located 
 in `DLoggModule/Makefile` is set to "true" another back-end will be used to 
 access the D-LOGG device. The alternative backend additionally requires 

@@ -24,12 +24,12 @@
 
 # Tool prefix used for cross-compiling. 
 # Leave it blank to use default toolchain.
-CROSS_COMPILE = 
+CROSS_COMPILE ?= 
 # CROSS_COMPILE = arm-linux-gnueabihf-
 
 # If this variable is set to true, the libftdi backend will be used instead of 
 # the termios API.   
-USE_LIBFTDI = "false"
+USE_LIBFTDI ?= false
 
 # The compiler command
 CC=$(CROSS_COMPILE)gcc
@@ -37,7 +37,7 @@ CC=$(CROSS_COMPILE)gcc
 # @brief Directory containing needed library files
 # @details The directory will not be distributed. Either use your packet manager
 # to install them or change the path to an appropriate directory
-LIB_DIR =
+LIB_DIR ?=
 # LIB_DIR += ../CSVLogger/lib-arm
 
 # @brief The compiler flags
@@ -54,7 +54,7 @@ LDFLAGS += $(LIB_DIR:%=-L%)
 # @brief The list of source files necessary to build the MAC library. 
 # It has to be updated manually
 CFILES_MAC = dlogg-current-data.c dlogg-mac-common.c
-ifeq ($(USE_LIBFTDI),"true")
+ifeq ($(USE_LIBFTDI),true)
   CFILES_MAC += dlogg-mac-ftdi.c
 else
   CFILES_MAC += dlogg-mac.c
@@ -66,7 +66,7 @@ CFILES_STDVAL = dlogg-stdval.c
 
 # @brief The list of external libraries 
 LIB = config
-ifeq ($(USE_LIBFTDI),"true")
+ifeq ($(USE_LIBFTDI),true)
   LIB += ftdi1
 endif
 
@@ -84,7 +84,7 @@ SRCDIR = src
 
 # @brief The name of the include directory
 INCLUDEDIR = ../CSVLogger/includes
-ifeq ($(USE_LIBFTDI),"true")
+ifeq ($(USE_LIBFTDI),true)
 	# following the libftdi default installation described in README.build
   INCLUDEDIR += /usr/include/libftdi1/
 endif
@@ -170,4 +170,4 @@ clean:
 	rm -f $(PRGNAME_MAC) $(PRGNAME_STDVAL)
 
 .PHONY: all clean docu binary
-	
+

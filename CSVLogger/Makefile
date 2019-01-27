@@ -6,7 +6,7 @@
 #
 # @author Michael Spiegel, michael.h.spiegel@gmail.com
 #
-# Copyright (C) 2014 Michael Spiegel
+# Copyright (C) 2019 Michael Spiegel
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 # Tool prefix used for cross-compiling. 
 # Leave it blank to use default toolchain.
-CROSS_COMPILE = 
+CROSS_COMPILE ?= 
 # CROSS_COMPILE = arm-linux-gnueabihf-
 
 # The compiler command
@@ -33,7 +33,7 @@ CC=$(CROSS_COMPILE)gcc
 # @brief Directory containing needed library files
 # @details The directory will not be distributed. Either use your packet manager
 # to install them or change the path to an appropriate directory
-LIB_DIR =
+LIB_DIR ?=
 # LIB_DIR += lib-arm
 
 # @brief The compiler flags
@@ -137,4 +137,4 @@ clean:
 	rm -f $(PRGNAME)
 
 .PHONY: all clean docu binary
-	
+

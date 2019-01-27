@@ -57,8 +57,8 @@ Platform:
 The logging framework and each module suite has to be compiled separately using
 the makefile provided. On cross-compiling the CROSS_COMPILE variable as well as
 the LIB_DIR variable might be set accordingly. The application requires at 
-least libconfig to be installed properly. If the USE_LIBFTDI variable located 
-in DLoggModule/Makefile is set to "true" another back-end will be used to 
+least libconfig to be installed properly. If the `USE_LIBFTDI` variable located 
+in `DLoggModule/Makefile` is set to "true" another back-end will be used to 
 access the D-LOGG device. The alternative backend additionally requires 
 libusb 1.0 and libftdi 1.1.
 
@@ -81,18 +81,24 @@ First, programs available via the package manager are installed.
 Pleas note that the libraries have to include the header files (*-dev) to build
 the programs.
 
-`$ sudo apt-get install git binutils make gcc`
-`$ sudo apt-get install libconfig-dev`
+```
+$ sudo apt-get install git binutils make gcc
+$ sudo apt-get install libconfig-dev
+```
 
 Afterwards, the source code is compiled. The current build process isn't really
 well developed and hence every module needed has to compiled on it's own:
 
-`$ git clone git@github.com:Spiegel0/log2csv.git log2csv`
-`$ cd log2csv/DLoggModule/`
-`$ make binary`
+```
+$ git clone git@github.com:Spiegel0/log2csv.git log2csv
+$ cd log2csv/DLoggModule/
+$ make binary
+```
 
-`$ cd ../CSVLogger/`
-`$ make binary`
+```
+$ cd ../CSVLogger/
+$ make binary
+```
 
 Now every available module should be built successfully. The default make 
 target "all" is also available but requires doxygen to create the source-code 
@@ -101,8 +107,10 @@ target instead of "all".
 You may now want to edit the program's configuration file 
 `CSVLogger/etc/log2csv.cnf` with your favorite text editor and try log2csv:
 
-`$ vim etc/log2csv.cnf`
-`$ ./log2csv -c etc/log2csv.cnf`
+```
+$ vim etc/log2csv.cnf
+$ ./log2csv -c etc/log2csv.cnf
+```
 
 If something does not work as expected, please open a ticket on GitHub. Note, 
 that the program is still in a very early beta stage and may not behave as 
@@ -114,18 +122,24 @@ If the default Linux driver doesn't work reliably (i.e. suddenly stops
 working), an alternative back-end is available. The back-end uses the 
 libftdi 1.1 library to access the FTDI chip in the DLogg module.
 
-`$ sudo apt-get install git binutils make gcc`
-`$ sudo apt-get install libconfig-dev libftdi1-dev`
+```
+$ sudo apt-get install git binutils make gcc
+$ sudo apt-get install libconfig-dev libftdi1-dev
+```
 
 Now, it should be possible to clone and compile the logging application. The 
 variable USE_LIBFTDI=true instructs the make to use the alternative back-end.
 
-`$ git clone git@github.com:Spiegel0/log2csv.git log2csv`
-`$ cd log2csv/DLoggModule/`
-`$ make USE_LIBFTDI=true binary`
+```
+$ git clone git@github.com:Spiegel0/log2csv.git log2csv
+$ cd log2csv/DLoggModule/
+$ make USE_LIBFTDI=true binary
+```
 
-`$ cd ../CSVLogger/`
-`$ make binary`
+```
+$ cd ../CSVLogger/
+$ make binary
+```
 
 # Limitations
 

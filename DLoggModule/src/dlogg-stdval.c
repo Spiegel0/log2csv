@@ -465,7 +465,7 @@ static common_type_t dlogg_stdval_analogOutput2common(
 
 	if (!analogOutput.val.activeN && analogOutput.val.voltage <= 100) {
 		ret.type = COMMON_TYPE_DOUBLE;
-		ret.data.doubleVal = analogOutput.val.voltage * 0.1;
+		ret.data.doubleVal = analogOutput.val.voltage * 0.01;
 	} else {
 		logging_adapter_info("An analog output requested isn't set by the "
 				"controller");

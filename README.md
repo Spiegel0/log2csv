@@ -1,6 +1,5 @@
 log2csv
 =======
-(Version 0.1, 04.03.2016)
 
 Log2csv is a very small and basic framework logging Heating Ventilation and Air
 Conditioning (HVAC)-related data into a CSV file. It consists of a main 
@@ -21,7 +20,7 @@ provide any means of reading historical data. If you just want to access data
 from devices manufactured by Technische Alternative using Linux, give d-logg-
 linux (http://d-logg-linux.roemix.de/) a try first! If you need some source of 
 inspiration concerning the implementation of TA's protocol or if your device is
- not supported by d-logg-linux please feel free to browse the source code and 
+not supported by d-logg-linux please feel free to browse the source code and 
 try to install the program. If you find any bugs or if you're willing to test 
 any new features I will be glad if you open a ticket or contact me via e-mail.
 
@@ -50,7 +49,7 @@ Devices:
 * D-LOGG USB data logger, version 2.9 or higher
 
 Platform:
-* Linux (Tested with Kernel 3.8 only) on
+* Linux (Tested with Kernel 3.8 and 4.4 only) on
 * ARM-Architecture (Tested with BeagleBone Black)
 
 # Installation
@@ -72,54 +71,61 @@ documented configuration example.
 ## Example Build Process
 
 The following example build process was executed on a BeagleBone Black running 
-Debian 7.6 (wheezy). It includes installing necessary programs and libraries as
-well as compiling log2csv. Unfortunately the libftdi-dev package is currently 
-not available in version 1.1 and the version available doesn't feature the used
-device. Hence the current libftdi version has to be installed manually as well. 
+Debian 9.6. It includes installing necessary programs and libraries as
+well as compiling log2csv. Two versions are given, one which uses the default 
+Linux interfaces and one which uses libftdi.
 
-First, programs available via the package manager are installed. libusb and 
-cmake are used to build libftdi and libconfig is required to build log2csv. 
+### Default Build Process
+
+First, programs available via the package manager are installed.
 Pleas note that the libraries have to include the header files (*-dev) to build
-the programs:
+the programs.
 
-$ sudo apt-get install libusb-1.0-0-dev cmake libconfig-dev
+`$ sudo apt-get install git binutils make gcc`
+`$ sudo apt-get install libconfig-dev`
 
-After installing the prerequisites, the libftdi can be cloned, built and 
-installed:
+Afterwards, the source code is compiled. The current build process isn't really
+well developed and hence every module needed has to compiled on it's own:
 
-$ git clone git://developer.intra2net.com/libftdi libftdi
-$ mkdir libftdi/build
-$ cd libftdi/build/
-$ cmake  -DCMAKE_INSTALL_PREFIX="/usr" ../
-$ make
-$ sudo make install
-$ cd ../..
+`$ git clone git@github.com:Spiegel0/log2csv.git log2csv`
+`$ cd log2csv/DLoggModule/`
+`$ make binary`
 
-If everything runs without errors, libftdi should now be installed. Lets try to
-clone the log2csv repository and compile the application. Unfortunately the 
-build process currently isn't really well developed so every module needed has 
-to compiled on it's own:
-
-$ git clone git@github.com:Spiegel0/log2csv.git log2csv
-$ cd log2csv/DLoggModule/
-$ make binary
-
-$ cd ../CSVLogger/
-$ make binary
+`$ cd ../CSVLogger/`
+`$ make binary`
 
 Now every available module should be built successfully. The default make 
 target "all" is also available but requires doxygen to create the source-code 
 documentation. If you do not have doxygen installed, call the "binary" make 
 target instead of "all".
 You may now want to edit the program's configuration file 
-CSVLogger/etc/log2csv.cnf with your favorite text editor and try log2csv:
+`CSVLogger/etc/log2csv.cnf` with your favorite text editor and try log2csv:
 
-$ vim etc/log2csv.cnf
-$ ./log2csv -c etc/log2csv.cnf
+`$ vim etc/log2csv.cnf`
+`$ ./log2csv -c etc/log2csv.cnf`
 
-If something does not work as expected, please open a ticket on git hub. Note 
+If something does not work as expected, please open a ticket on GitHub. Note, 
 that the program is still in a very early beta stage and may not behave as 
 expected.
+
+## Alternative libftdi Back-End
+
+If the default Linux driver doesn't work reliably (i.e. suddenly stops 
+working), an alternative back-end is available. The back-end uses the 
+libftdi 1.1 library to access the FTDI chip in the DLogg module.
+
+`$ sudo apt-get install git binutils make gcc`
+`$ sudo apt-get install libconfig-dev libftdi1-dev`
+
+Now, it should be possible to clone and compile the logging application. The 
+variable USE_LIBFTDI=true instructs the make to use the alternative back-end.
+
+`$ git clone git@github.com:Spiegel0/log2csv.git log2csv`
+`$ cd log2csv/DLoggModule/`
+`$ make USE_LIBFTDI=true binary`
+
+`$ cd ../CSVLogger/`
+`$ make binary`
 
 # Limitations
 
@@ -131,14 +137,18 @@ not rely on the module implementation shipped with the kernel. The alternative
 UART API can be enabled in the Makefile of the DLogg module. Unfortunately, also
 the alternative implementation seems to crash eventually but less frequently. A 
 quick fix is to reset the usb device by first writing "-1" to 
-/sys/bus/usb/devices/usb1/bConfigurationValue . After approximately one second,
+`/sys/bus/usb/devices/usb1/bConfigurationValue`. After approximately one second,
 the device can be enabled again by writing "1" to the same file.
+
+It turned out that newer kernel versions (e.g. 4.4) are less sensitive to that 
+USB UART bug and do not require the reset-workaround anymore. Still, sometimes 
+missing messages are observed.
 
 # License and Warranty
 
 log2csv
 
-Copyright (C) 2016 Michael Spiegel
+Copyright (C) 2019 Michael Spiegel
 E-Mail: michael.h.spiegel@gmail.com
 
 This program is free software; you can redistribute it and/or modify

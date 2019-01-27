@@ -6,7 +6,7 @@
 #
 # @author Michael Spiegel, michael.h.spiegel@gmail.com
 #
-# Copyright (C) 2016 Michael Spiegel
+# Copyright (C) 2019 Michael Spiegel
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ CROSS_COMPILE =
 
 # If this variable is set to true, the libftdi backend will be used instead of 
 # the termios API.   
-USE_LIBFTDI = "true"
+USE_LIBFTDI = "false"
 
 # The compiler command
 CC=$(CROSS_COMPILE)gcc

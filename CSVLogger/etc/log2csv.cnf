@@ -17,7 +17,7 @@
 #
 # Author: Michael Spiegel, michael.h.spiegel@gmail.com
 #
-# Copyright (C) 2014 Michael Spiegel
+# Copyright (C) 2019 Michael Spiegel
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,6 +42,10 @@ outFile="data.csv";
 timeFormat="%d.%m.%Y %H:%M:%S";
 # The title of the first column storing the current time
 timeHeader="Time stamp";
+
+# (optional) The delimiter used to separate fields in the CSV file. If no 
+# fieldDelimiter is set, ";" is used.
+fieldDelimiter=";"
 
 # The fieldbus mac layer modules to load. Each module directive contains the 
 # parameters needed. The mandatory name directive corresponds to the module's 

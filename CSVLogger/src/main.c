@@ -7,7 +7,7 @@
  *
  * @author Michael Spiegel, michael.h.spiegel@gmail.com
  *
- * Copyright (C) 2014 Michael Spiegel
+ * Copyright (C) 2019 Michael Spiegel
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,10 +59,11 @@
 #define MAIN_CONFIG_CHANNEL "channel"
 #define MAIN_CONFIG_TITLE "title"
 #define MAIN_CONFIG_OUT_FILE "outFile"
+#define MAIN_CONFIG_CSV_SEP "fieldDelimiter"
 #define MAIN_CONFIG_TIME_FORMAT "timeFormat"
 #define MAIN_CONFIG_TIME_HEADER "timeHeader"
 
-/** @brief The column separator used within the CSV file */
+/** @brief The default column separator used within the CSV file */
 #define MAIN_CSV_SEP ";"
 /** @brief The newline sequence used within the CSV file */
 #define MAIN_CSV_NEWLINE "\n"
@@ -206,19 +207,19 @@ static inline void main_initOutputFile() {
  */
 static void main_writeCSVHeader() {
 	unsigned int i;
-	size_t len;
 	const char* timeHeader = "Current Time/Date";
+    const char* csvSeparator = MAIN_CSV_SEP;
 
 	assert(main_csvOut != NULL);
 
 	(void) config_lookup_string(&main_config, MAIN_CONFIG_TIME_HEADER,
 			&timeHeader);
+    (void) config_lookup_string(&main_config, MAIN_CONFIG_CSV_SEP, 
+            &csvSeparator);
 
 	main_appendString(main_csvOut, timeHeader);
-	len = strlen(MAIN_CSV_SEP);
-	if (fwrite(MAIN_CSV_SEP, sizeof(char), len, main_csvOut) != len) {
-		main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
-				"CSV-file", len);
+	if (fprintf(main_csvOut, "%s", csvSeparator) < 0) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
 	}
 
 	for (i = 0; i < main_channelVectorLength; i++) {
@@ -226,20 +227,15 @@ static void main_writeCSVHeader() {
 		main_appendString(main_csvOut, main_channelVector[i].title);
 
 		if (i + 1 != main_channelVectorLength) {
-			len = strlen(MAIN_CSV_SEP);
-			if (fwrite(MAIN_CSV_SEP, sizeof(char), len, main_csvOut) != len) {
-				main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
-						"CSV-file", len);
-			}
+        	if (fprintf(main_csvOut, "%s", csvSeparator) < 0) {
+        		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
+        	}
 		}
 	}
 
-	len = strlen(MAIN_CSV_NEWLINE);
-	if (fwrite(MAIN_CSV_NEWLINE, sizeof(char), len, main_csvOut) != len) {
-		main_bailOut(EXIT_ERR_OUTFILE, "Can't write all \"%d\" bytes to the "
-				"CSV-file", len);
+   	if (fprintf(main_csvOut, "%s", MAIN_CSV_NEWLINE) < 0) {
+		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file");
 	}
-
 }
 
 /**
@@ -347,8 +343,12 @@ static void main_processSamples() {
 	unsigned int i;
 	common_type_t result;
 	common_type_error_t err;
+    const char* csvSeparator = MAIN_CSV_SEP;
 
 	assert(main_csvOut != NULL);
+
+    (void) config_lookup_string(&main_config, MAIN_CONFIG_CSV_SEP, 
+            &csvSeparator);
 
 	err = pfm_sync();
 	if (err != COMMON_TYPE_SUCCESS) {
@@ -360,7 +360,7 @@ static void main_processSamples() {
 	}
 
 	main_appendTimestamp(main_csvOut, &currentTime);
-	if (fprintf(main_csvOut, "%s", MAIN_CSV_SEP) < 0) {
+	if (fprintf(main_csvOut, "%s", csvSeparator) < 0) {
 		main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
 	}
 
@@ -373,7 +373,7 @@ static void main_processSamples() {
 		main_appendResult(main_csvOut, &result);
 
 		if (i + 1 < main_channelVectorLength) {
-			if (fprintf(main_csvOut, "%s", MAIN_CSV_SEP) < 0) {
+			if (fprintf(main_csvOut, "%s", csvSeparator) < 0) {
 				main_bailOut(EXIT_ERR_OUTFILE, "Can't write to the CSV file anymore");
 			}
 		}
